@@ -1,0 +1,38 @@
+<document xmlns:api="api"
+    xmlns:pb="protobuf"
+    xmlns:db="database"
+>
+
+    <enums>
+        <enum name="RecordStatus">
+            <value name="Draft">0</value>
+            <value name="PendingReview">10</value>
+            <value name="InReview">20</value>
+            <value name="Live">30</value>
+            <value name="Deleted">40</value>
+        </enum>
+    </enums>
+
+    <records>
+        <record name="Business">
+            <fields>
+                <i64 name="Id" required="true" key="true"/>
+                <s name="Title" minLength="3" maxLength="255" checkOnUpdate="true" />
+                <ref name="Address" entity="Address" />
+            </fields>
+        </record>
+
+        <record name="Address">
+            <fields>
+                <i64 name="Id" required="true" key="true"/>
+                <s name="Line1" required="true" />
+                <s name="Line2" />
+                <s name="City" />
+                <s name="Country" />
+                <s name="PostalCode" required="true" />
+            </fields>
+        </record>
+
+    </records>
+
+</document>
