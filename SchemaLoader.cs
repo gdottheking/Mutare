@@ -5,17 +5,29 @@ namespace Sharara.EntityCodeGen
 {
     class SchemaLoader
     {
+        const string NS_API = "https://codegen.sharara.com/api/v1";
+        const string NS_PROTO = "https://codegen.sharara.com/protobuf/v1";
+        const string NS_DB = "https://codegen.sharara.com/database/v1";
+
+
         public const string RecordsElementName = "records";
         public const string RecordElementName = "record";
         public const string EnumsElementName = "enums";
         public const string EnumElementName = "enum";
         public const string FieldsElementName = "fields";
 
+
+
         public Schema ReadDocument(string path)
         {
             // Load the XML file
             XmlDocument doc = new XmlDocument();
             doc.Load(path);
+
+            var xnsmgr = new XmlNamespaceManager(doc.NameTable);
+            xnsmgr.AddNamespace("api", NS_API);
+            xnsmgr.AddNamespace("pb", NS_PROTO);
+            xnsmgr.AddNamespace("db", NS_DB);
 
             // Get the root element
             XmlElement root = doc.DocumentElement;
@@ -52,7 +64,7 @@ namespace Sharara.EntityCodeGen
                 }
             }
 
-             return new Schema(records, enums);
+            return new Schema(records, enums);
         }
 
         List<RecordEntity> ReadRecords(XmlElement entitiesListElement)
@@ -100,7 +112,7 @@ namespace Sharara.EntityCodeGen
                         break;
 
                     default:
-                        throw new InvalidDataException($"Unknown element: {el.Name} contained under <{RecordElementName}>");
+                        throw new InvalidDataException($"Unknown element: <{el.Name}> contained under <{RecordElementName}>");
                 }
             }
 
@@ -152,7 +164,7 @@ namespace Sharara.EntityCodeGen
                         break;
 
                     default:
-                        throw new InvalidDataException($"Unknown element: {el.Name} contained under <{EnumElementName}>");
+                        throw new InvalidDataException($"Unknown element: <{el.Name}> contained under <{EnumElementName}>");
                 }
             }
 
@@ -194,7 +206,7 @@ namespace Sharara.EntityCodeGen
                         break;
 
                     default:
-                        throw new InvalidDataException($"Unknown element: {el.Name} contained under <fields>");
+                        throw new InvalidDataException($"Unknown element: <{el.Name}> contained under <{FieldsElementName}>");
                 }
                 fields.Add(field);
             }
@@ -249,6 +261,7 @@ namespace Sharara.EntityCodeGen
         void ReadCoreFieldAttributes(Field field, XmlElement fieldXmlElement)
         {
             field.Name = MustGetString(fieldXmlElement, "name");
+            field.ProtoId = MustGetInt(fieldXmlElement, "pb:id");
             field.Required = GetBool(fieldXmlElement, "required");
             field.IsKey = GetBool(fieldXmlElement, "key");
             field.CheckOnUpdate = GetBool(fieldXmlElement, "checkOnUpdate");
@@ -278,6 +291,15 @@ namespace Sharara.EntityCodeGen
             ArgumentNullException.ThrowIfNull(el);
             ArgumentException.ThrowIfNullOrEmpty(el.InnerText);
             return int.Parse(el.InnerText);
+        }
+
+        int MustGetInt(XmlElement el, string attribName)
+        {
+            ArgumentNullException.ThrowIfNull(el);
+            ArgumentNullException.ThrowIfNull(attribName);
+            string? value = el.Attributes?[attribName]?.Value;
+            ArgumentException.ThrowIfNullOrEmpty(value);
+            return int.Parse(value);
         }
 
     }

@@ -2,16 +2,18 @@ using Sharara.EntityCodeGen.Core;
 
 namespace Sharara.EntityCodeGen.Generators.Ef
 {
-    internal class ClassGen : IEntityVisitor, IDisposable
+    internal class EntityGen : IEntityVisitor, IDisposable
     {
-        const string Padding1 = "    ";
-        const string Padding2 = Padding1 + Padding1;
-
-        private Func<Entity, TextWriter> writerProvider;
-        private Stack<TextWriter> writers = new Stack<TextWriter>();
+        private Func<Entity, CodeWriter> writerProvider;
+        private Stack<CodeWriter> writers = new Stack<CodeWriter>();
         private Schema definition;
 
-        public ClassGen(Schema definition, Func<Entity, TextWriter> writerProvider)
+        static readonly string[] Usings = new string[]{
+            "using System.ComponentModel.DataAnnotations;",
+            "using System.ComponentModel.DataAnnotations.Schema;"
+        };
+
+        public EntityGen(Schema definition, Func<Entity, CodeWriter> writerProvider)
         {
             this.writerProvider = writerProvider;
             this.definition = definition;
@@ -27,61 +29,73 @@ namespace Sharara.EntityCodeGen.Generators.Ef
 
         public void VisitRecord(RecordEntity entity)
         {
-            using var writer = writerProvider(entity);
-            writer.WriteLine($"internal class {entity.Name}");
-            writer.WriteLine("{");
-            writer.Flush();
-            writers.Push(writer);
+            using var codeWriter = writerProvider(entity);
+
+                        foreach (var str in Usings)
+            {
+                codeWriter.WriteLine(str);
+            }
+            codeWriter.WriteLine();
+            codeWriter.WriteLine($"[Table(\"{entity.Name}\")]");
+            codeWriter.WriteLine($"public class {entity.Name}Entity");
+            codeWriter.WriteLine("{");
+            codeWriter.Indent();
+            writers.Push(codeWriter);
             foreach (var field in entity.fields)
             {
                 field.Accept(this);
             }
             writers.Pop();
-            writer.WriteLine("}");
-            writer.Flush();
+            codeWriter.UnIndent();
+            codeWriter.WriteLine("}");
+            codeWriter.UnIndent();
+            codeWriter.Flush();
         }
 
         public void VisitEnum(EnumEntity entity)
         {
-            using var writer = writerProvider(entity);
-            writer.WriteLine($"internal enum {entity.Name}");
-            writer.WriteLine("{");
-            writers.Push(writer);
+            using var codeWriter = writerProvider(entity);
+            codeWriter.WriteLine($"internal enum {entity.Name}");
+            codeWriter.WriteLine("{");
+            codeWriter.Indent();
+            writers.Push(codeWriter);
             for (int i = 0; i < entity.Values.Count; i++)
             {
                 var val = entity.Values[i];
                 val.Accept(this, i, entity.Values.Count);
             }
             writers.Pop();
-            writer.WriteLine("}");
-            writer.Flush();
+            codeWriter.UnIndent();
+            codeWriter.WriteLine("}");
+            codeWriter.Flush();
         }
 
         private void WriteFieldAnnotations(Field field)
         {
-            var writer = writers.Peek();
+            var codeWriter = writers.Peek();
 
             if (field.IsKey)
             {
-                writer.WriteLine($"{Padding1}[Key]");
+                codeWriter.WriteLine($"[Key]");
             }
 
             if (field.Required)
             {
-                writer.WriteLine($"{Padding1}[Required]");
+                codeWriter.WriteLine($"[Required]");
             }
 
             if (field.CheckOnUpdate)
             {
-                writer.WriteLine($"{Padding1}[ConcurrencyCheck]");
+                codeWriter.WriteLine($"[ConcurrencyCheck]");
             }
         }
+
         private void WriteField(Field field, string clrType)
         {
             WriteFieldAnnotations(field);
-            var writer = writers.Peek();
-            writer.WriteLine($"{Padding1}public {clrType} {field.Name} {{get; set;}}");
-            writer.WriteLine();
+            var codeWriter = writers.Peek();
+            codeWriter.WriteLine($"public {clrType} {field.Name} {{get; set;}}");
+            codeWriter.WriteLine();
         }
 
         public void VisitField(Field field)
@@ -89,7 +103,7 @@ namespace Sharara.EntityCodeGen.Generators.Ef
             throw new NotImplementedException();
         }
 
-        private string clrType(Field field)
+        private string ClrFieldType(Field field)
         {
             return field.InternalType switch
             {
@@ -103,22 +117,22 @@ namespace Sharara.EntityCodeGen.Generators.Ef
 
         public void VisitStringField(StringField field)
         {
-            WriteField(field, clrType(field));
+            WriteField(field, ClrFieldType(field));
         }
 
         public void VisitInt64Field(Int64Field field)
         {
-            WriteField(field, clrType(field));
+            WriteField(field, ClrFieldType(field));
         }
 
         public void VisitFloat64Field(Float64Field field)
         {
-            WriteField(field, clrType(field));
+            WriteField(field, ClrFieldType(field));
         }
 
         public void VisitDateTimeField(DateTimeField field)
         {
-            WriteField(field, clrType(field));
+            WriteField(field, ClrFieldType(field));
         }
 
         public void VisitReferenceField(ReferenceField field)
@@ -129,34 +143,34 @@ namespace Sharara.EntityCodeGen.Generators.Ef
             }
 
 
-            var writer = writers.Peek();
+            var codeWriter = writers.Peek();
             var refEntity = definition.GetEntityByName(field.EntityName);
             if (refEntity is RecordEntity refRecord)
             {
                 foreach (var fkField in refRecord.Keys())
                 {
                     WriteFieldAnnotations(field);
-                    writer.WriteLine("    // TODO: Reference field");
-                    writer.WriteLine($"{Padding1}public {clrType(fkField)} {field.Name}{fkField.Name} {{ get; set; }}");
+                    codeWriter.WriteLine("// TODO: Reference field");
+                    codeWriter.WriteLine($"public {ClrFieldType(fkField)} {field.Name}{fkField.Name} {{ get; set; }}");
                 }
             }
             else if (refEntity is EnumEntity refEnum)
             {
                 WriteFieldAnnotations(field);
-                writer.WriteLine("    // TODO: Reference field");
-                writer.WriteLine($"{Padding1}public {refEnum.Name} {field.Name} {{ get; set; }}");
+                codeWriter.WriteLine("    // TODO: Reference field");
+                codeWriter.WriteLine($"public {refEnum.Name} {field.Name} {{ get; set; }}");
             }
         }
 
         public void VisitEnumValue(EnumValue value, int offset, int count)
         {
-            var writer = writers.Peek();
-            writer.Write($"    {value.Name} = {value.Value}");
+            var codeWriter = writers.Peek();
+            codeWriter.Write($"{value.Name} = {value.Value}");
             if (offset < count - 1)
             {
-                writer.Write(",");
+                codeWriter.Write(",");
             }
-            writer.WriteLine();
+            codeWriter.WriteLine();
         }
 
         public void Dispose()
