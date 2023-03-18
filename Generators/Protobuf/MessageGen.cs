@@ -2,22 +2,39 @@ using Sharara.EntityCodeGen.Core;
 
 namespace Sharara.EntityCodeGen.Generators.Protobuf
 {
-    internal class ProtoGen : IEntityVisitor, IDisposable
+    internal class MessageGen : IEntityVisitor, IFieldVisitor, IDisposable
     {
         private CodeWriter codeWriter;
-        private Schema definition;
+        private Schema schema;
+        private RpcServiceGen rpcServiceGen = new RpcServiceGen();
 
-        public ProtoGen(Schema definition, CodeWriter codeWriter)
+        public MessageGen(Schema definition, CodeWriter codeWriter)
         {
             this.codeWriter = codeWriter;
-            this.definition = definition;
+            this.schema = definition;
         }
 
         public void Generate()
         {
-            foreach (var entity in definition.Entities)
+            var lines = new string[] {
+                "syntax = \"proto3\"",
+                $"option csharp_namespace = \"{schema.Configuration.CSharpNamespace}\";",
+                $"package {schema.Configuration.ProtoPackage};"
+            };
+
+            foreach (var line in lines)
+            {
+                codeWriter.WriteLine(line);
+            }
+
+            codeWriter.WriteLine();
+
+            rpcServiceGen.GenerateRpcService(schema, codeWriter);
+
+            foreach (var entity in schema.Entities)
             {
                 entity.Accept(this);
+                codeWriter.WriteLine();
             }
         }
 
@@ -41,8 +58,7 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
         public void VisitEnum(EnumEntity entity)
         {
 
-            codeWriter.WriteLine($"enum {entity.Name}");
-            codeWriter.WriteLine("{");
+            codeWriter.WriteLine($"enum {entity.Name} {{");
             codeWriter.Indent();
 
             for (int i = 0; i < entity.Values.Count; i++)
@@ -68,13 +84,13 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         private string ProtoFieldType(Field field)
         {
-            return field.InternalType switch
+            return field.FieldType switch
             {
                 FieldType.DateTime => "string",
                 FieldType.Float64 => "double",
                 FieldType.Int64 => "int64",
                 FieldType.String => "string",
-                _ => throw new NotImplementedException("FieldType does not have a matching clrType")
+                _ => throw new NotImplementedException($"{field.FieldType} does not have a matching protobuf type")
             };
         }
 
@@ -100,12 +116,12 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         public void VisitReferenceField(ReferenceField field)
         {
-            if (!definition.HasEntityName(field.EntityName))
+            if (!schema.HasEntityName(field.EntityName))
             {
                 throw new InvalidOperationException($"Unknown entity: {field.EntityName}");
             }
 
-            var refEntity = definition.GetEntityByName(field.EntityName);
+            var refEntity = schema.GetEntityByName(field.EntityName);
             if (refEntity is RecordEntity refRecord)
             {
                 foreach (var fkField in refRecord.Keys())

@@ -1,18 +1,8 @@
 namespace Sharara.EntityCodeGen.Core
 {
-    enum FieldType
-    {
-        None,
-        String,
-        Int64,
-        Float64,
-        DateTime,
-        Ref
-    }
-
     class Field
     {
-        internal FieldType InternalType { get; }
+        internal FieldType FieldType { get; }
 
         public string? Name { get; set; }
         public bool Required { get; set; }
@@ -22,7 +12,7 @@ namespace Sharara.EntityCodeGen.Core
 
         protected Field(FieldType type)
         {
-            InternalType = type;
+            FieldType = type;
         }
 
         public override string ToString()
@@ -30,7 +20,7 @@ namespace Sharara.EntityCodeGen.Core
             return $"{Name} [{Required}]";
         }
 
-        public virtual void Accept(IEntityVisitor visitor)
+        public virtual void Accept(IFieldVisitor visitor)
         {
             visitor.VisitField(this);
         }

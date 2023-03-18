@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Remove="Generated\**" />
+    <None Remove="Generated\**" />
   </ItemGroup>
 
 </Project>

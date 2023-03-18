@@ -12,5 +12,28 @@ namespace Sharara.EntityCodeGen.Core
         {
             visitor.VisitRecord(this);
         }
+
+        public override void Validate()
+        {
+            // Duplicates should throw
+            try
+            {
+                fields.ToDictionary(v => v.Name, v => v);
+            }
+            catch (ArgumentException e)
+            {
+                throw new ArgumentException($"Entity {Name}. Field has duplicate name {e.Message}");
+            }
+
+            try
+            {
+                fields.ToDictionary(v => v.Name, v => v);
+                fields.ToDictionary(v => v.ProtoId, v => v);
+            }
+            catch (ArgumentException e)
+            {
+                throw new Exception($"Entity {Name}. Field has duplicate proto id: {e.Message}");
+            }
+        }
     }
 }

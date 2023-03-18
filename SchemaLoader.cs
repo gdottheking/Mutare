@@ -8,15 +8,12 @@ namespace Sharara.EntityCodeGen
         const string NS_API = "https://codegen.sharara.com/api/v1";
         const string NS_PROTO = "https://codegen.sharara.com/protobuf/v1";
         const string NS_DB = "https://codegen.sharara.com/database/v1";
-
-
+        const string NS_CSHARP = "https://codegen.sharara.com/csharp/v1";
         public const string RecordsElementName = "records";
         public const string RecordElementName = "record";
         public const string EnumsElementName = "enums";
         public const string EnumElementName = "enum";
         public const string FieldsElementName = "fields";
-
-
 
         public Schema ReadDocument(string path)
         {
@@ -28,6 +25,7 @@ namespace Sharara.EntityCodeGen
             xnsmgr.AddNamespace("api", NS_API);
             xnsmgr.AddNamespace("pb", NS_PROTO);
             xnsmgr.AddNamespace("db", NS_DB);
+            xnsmgr.AddNamespace("csharp", NS_CSHARP);
 
             // Get the root element
             XmlElement root = doc.DocumentElement;
@@ -40,6 +38,9 @@ namespace Sharara.EntityCodeGen
             {
                 throw new InvalidOperationException("Xml document root is null");
             }
+
+            var cSharpNamespace = MustGetString(root, "csharp:namespace");
+            var protoPackageName = MustGetString(root, "pb:package");
 
             foreach (XmlNode node in root.ChildNodes)
             {
@@ -64,7 +65,10 @@ namespace Sharara.EntityCodeGen
                 }
             }
 
-            return new Schema(records, enums);
+            var schemaConfig = new SchemaConfig(cSharpNamespace, protoPackageName);
+            var schema = new Schema(schemaConfig, records, enums);
+            schema.Validate();
+            return schema;
         }
 
         List<RecordEntity> ReadRecords(XmlElement entitiesListElement)

@@ -15,7 +15,7 @@ namespace Sharara.EntityCodeGen.Generators
             this.writer = writer;
         }
 
-        public void Write(string content)
+        public CodeWriter Write(string content)
         {
             ThrowIfDisposed();
             if (currLineIsEmpty)
@@ -24,34 +24,40 @@ namespace Sharara.EntityCodeGen.Generators
                 currLineIsEmpty = false;
             }
             writer.Write(content);
+
+            return this;
         }
 
-        public void WriteLine()
+        public CodeWriter WriteLine()
         {
             ThrowIfDisposed();
             writer.WriteLine();
             currLineIsEmpty = true;
+            return this;
         }
 
-        public void WriteLine(string content)
+        public CodeWriter WriteLine(string content)
         {
             this.Write(content);
             this.WriteLine();
+            return this;
         }
 
-        public void Flush()
+        public CodeWriter Flush()
         {
             ThrowIfDisposed();
             writer.Flush();
+            return this;
         }
 
-        public void Indent()
+        public CodeWriter Indent()
         {
             ThrowIfDisposed();
             currPadding += PaddingIncrement;
+            return this;
         }
 
-        public void UnIndent()
+        public CodeWriter UnIndent()
         {
             ThrowIfDisposed();
             int len = currPadding.Length - PaddingIncrement.Length;
@@ -63,6 +69,8 @@ namespace Sharara.EntityCodeGen.Generators
             {
                 currPadding = currPadding.Substring(0, len);
             }
+
+            return this;
         }
 
         public void Dispose()

@@ -6,5 +6,8 @@ namespace Sharara.EntityCodeGen.Core
         public virtual void Accept(IEntityVisitor visitor) {
             throw new NotImplementedException();
         }
+
+        public  abstract void Validate();
+
     }
 }

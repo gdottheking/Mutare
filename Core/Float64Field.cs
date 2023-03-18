@@ -11,7 +11,7 @@ namespace Sharara.EntityCodeGen.Core
         {
         }
 
-        public override void Accept(IEntityVisitor visitor)
+        public override void Accept(IFieldVisitor visitor)
         {
             visitor.VisitFloat64Field(this);
         }

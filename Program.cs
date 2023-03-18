@@ -1,20 +1,50 @@
+using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Generators;
-using Sharara.EntityCodeGen.Generators.Ef;
+using Sharara.EntityCodeGen.Generators.CSharp;
 using Sharara.EntityCodeGen.Generators.Protobuf;
 
 namespace Sharara.EntityCodeGen
 {
-    public class Program
+    public partial class Program
     {
+        private const string OutputFolder = "Generated";
+
         static void Main()
         {
-            if (!Directory.Exists("Generated"))
+            Console.WriteLine("Loading schema");
+            var schema = (new SchemaLoader()).ReadDocument("definition.xml");
+            var service = new Service(schema);
+
+            CleanOutputFolder();
+
+            var codeWriterProvider = new DefaultCodeWriterHelper(OutputFolder);
+
+            Console.WriteLine("Generating Entity classes");
+            var generator = new Generator(service, codeWriterProvider);
+            generator.Generate();
+
+            Console.WriteLine("Generating DatabaseContext");
+            var dbCtxWriter = new CodeWriter(File.CreateText($"{OutputFolder}/DatabaseContext.cs"));
+            var dbContextGen = new DbContextGen(schema, dbCtxWriter, codeWriterProvider);
+            dbContextGen.Generate();
+
+            Console.WriteLine("Generating proto file");
+            var protoWriter = new CodeWriter(File.CreateText($"{OutputFolder}/output.proto"));
+            var protoGen = new MessageGen(schema, protoWriter);
+            protoGen.Generate();
+        }
+
+        static void CleanOutputFolder()
+        {
+            Console.WriteLine($"Cleaning folder {OutputFolder}");
+
+            if (!Directory.Exists(OutputFolder))
             {
-                Directory.CreateDirectory("Generated");
+                Directory.CreateDirectory(OutputFolder);
             }
             else
             {
-                System.IO.DirectoryInfo di = new DirectoryInfo("YourPath");
+                System.IO.DirectoryInfo di = new DirectoryInfo(OutputFolder);
                 foreach (FileInfo file in di.GetFiles())
                 {
                     file.Delete();
@@ -24,24 +54,6 @@ namespace Sharara.EntityCodeGen
                     dir.Delete(true);
                 }
             }
-
-
-
-            var def = (new SchemaLoader()).ReadDocument("definition.xml");
-            var classGen = new EntityGen(def, entity =>
-            {
-                Console.WriteLine();
-                return  new CodeWriter(File.CreateText($"Generated/{entity.Name}.cs"));
-            });
-            classGen.Generate();
-
-            var protoWriter = new CodeWriter(File.CreateText("Generated/output.proto"));
-            var protoGen = new ProtoGen(def, protoWriter);
-            protoGen.Generate();
-
-            var dbCtxWriter = new CodeWriter(File.CreateText("Generated/DatabaseContext.cs"));
-            var dbContextGen = new DbContextGen(def, dbCtxWriter);
-            dbContextGen.Generate();
         }
 
     }

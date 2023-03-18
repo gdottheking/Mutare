@@ -2,11 +2,11 @@ namespace Sharara.EntityCodeGen.Core
 {
     class Schema
     {
-        readonly Dictionary<string, Entity> entityById = new Dictionary<string, Entity>();
+        private readonly Dictionary<string, Entity> entityById = new Dictionary<string, Entity>();
 
-        internal Schema(params IEnumerable<Entity>[] listOfLists)
+        public Schema(SchemaConfig config, params IEnumerable<Entity>[] listOfLists)
         {
-
+            this.Configuration = config;
             Action<IEnumerable<Entity>> AddItems = (items) =>
             {
                 foreach (var item in items)
@@ -26,6 +26,8 @@ namespace Sharara.EntityCodeGen.Core
 
         }
 
+        public SchemaConfig Configuration { get; }
+
         public IEnumerable<Entity> Entities { get => entityById.Values; }
 
         public bool HasEntityName(string name) => entityById.ContainsKey(name);
@@ -35,28 +37,11 @@ namespace Sharara.EntityCodeGen.Core
             return entityById[name];
         }
 
-        public void DebugPrint()
+        public void Validate()
         {
-            // Display the results
-            if (entityById != null)
+            foreach (var entity in Entities)
             {
-                foreach (Entity e in entityById.Values)
-                {
-                    if (e is RecordEntity rec)
-                    {
-                        Console.WriteLine("record: " + rec.Name);
-                        foreach (var field in rec.fields)
-                        {
-                            Console.WriteLine("    " + field);
-                        }
-                    }
-                    else if (e is EnumEntity en)
-                    {
-                        Console.WriteLine("enum: " + en.Name);
-                        Console.WriteLine("    " + string.Join(",", en.Values.Select(v => v.ToString()))
-                        );
-                    }
-                }
+                entity.Validate();
             }
         }
 
