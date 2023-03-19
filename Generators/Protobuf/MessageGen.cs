@@ -88,39 +88,63 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
                 FieldType.DateTime => "string",
                 FieldType.Float64 => "double",
                 FieldType.Int64 => "int64",
+                FieldType.Int32 => "int32",
                 FieldType.String => "string",
                 _ => throw new NotImplementedException($"{field.FieldType} does not have a matching protobuf type")
             };
         }
 
-        public void VisitStringField(StringField field)
+        void WriteProtoField(Field field)
         {
             WriteField(field, ProtoFieldType(field));
+        }
+
+        public void VisitStringField(StringField field)
+        {
+            WriteProtoField(field);
         }
 
         public void VisitInt64Field(Int64Field field)
         {
-            WriteField(field, ProtoFieldType(field));
+            WriteProtoField(field);
+        }
+
+        public void VisitInt32Field(Int32Field field)
+        {
+            WriteProtoField(field);
         }
 
         public void VisitFloat64Field(Float64Field field)
         {
-            WriteField(field, ProtoFieldType(field));
+            WriteProtoField(field);
         }
 
         public void VisitDateTimeField(DateTimeField field)
         {
-            WriteField(field, ProtoFieldType(field));
+            WriteProtoField(field);
         }
 
         public void VisitReferenceField(ReferenceField field)
         {
-            if (!service.Schema.HasEntityName(field.EntityName))
+            Entity refEntity;
+            if (field.FieldType is FieldType.EntityRef etyRef)
             {
-                throw new InvalidOperationException($"Unknown entity: {field.EntityName}");
+                refEntity = etyRef.Entity;
+            }
+            else if (field.FieldType is FieldType.EntityNameRef nameRef)
+            {
+                if (!service.Schema.HasEntityName(nameRef.EntityName))
+                {
+                    throw new InvalidOperationException($"Unknown entity: {nameRef.EntityName}");
+                }
+                refEntity = service.Schema.GetEntityByName(nameRef.EntityName);
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
 
-            var refEntity = service.Schema.GetEntityByName(field.EntityName);
+
             if (refEntity is RecordEntity refRecord)
             {
                 int offset = 0;
@@ -143,5 +167,9 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
             codeWriter.WriteLine($"{value.Name} = {value.Value};");
         }
 
+        public void VisitListField(ListField listField)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

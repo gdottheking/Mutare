@@ -18,6 +18,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             {
                 GeneratedType.RepoInterface => "IRepository",
                 GeneratedType.RepoClass => "Repository",
+                GeneratedType.Service => "Service",
                 _ => throw new InvalidOperationException()
             };
         }
@@ -54,70 +55,35 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             return new CodeWriter(writer);
         }
 
-        public string ClrFieldType(FieldType ftype, bool forceNullable = false)
+        public string MapToClrTypeName(FieldType fieldType, bool forceNullable = false)
         {
             Func<string, string> Coerce = (clrType) => forceNullable ? clrType += "?" : clrType;
 
-            return ftype switch
+            return fieldType switch
             {
                 FieldType.DateTime => Coerce("DateTime"),
                 FieldType.Float64 => Coerce("double"),
                 FieldType.Int64 => Coerce("long"),
+                FieldType.Int32 => Coerce("int"),
                 FieldType.String => "string",
-                _ => throw new NotImplementedException("FieldType does not have a matching clrType")
+                FieldType.List l => $"IEnumerable<{MapToClrTypeName(l.ItemType)}>",
+                FieldType.Void => "void",
+                FieldType.EntityRef entyRef => GetTypeName(entyRef.Entity, GeneratedType.Entity),
+                _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
             };
         }
 
         public string ClrDeclString(OperationInfo op)
         {
             string @params = string.Join(", ", op.Arguments.Select(ClrDeclString));
-            string returnType = ClrTypeOfReturnValue(op.ReturnType);
+            string returnType = MapToClrTypeName(op.ReturnType);
             returnType = returnType.Equals("void") ? "Task" : $"Task<{returnType}>";
             return $"{returnType} {op.Name}Async({@params})";
         }
 
-        public string ClrTypeOfReturnValue(OperationInfo.IReturn opReturnInfo)
+        public string ClrDeclString(Argument arg)
         {
-            if (opReturnInfo is OperationInfo.VoidReturn)
-            {
-                return "void";
-            }
-            else if (opReturnInfo is OperationInfo.ScalarReturn sr)
-            {
-                return ClrFieldType(sr.FieldType);
-            }
-            else if (opReturnInfo is OperationInfo.EntityReturn er)
-            {
-                return GetTypeName(er.Entity, GeneratedType.Entity);
-            }
-            else if (opReturnInfo is OperationInfo.Many many)
-            {
-                string clrType = ClrTypeOfReturnValue((OperationInfo.IReturn)many.ItemType);
-                return $"IEnumerable<{clrType}>";
-            }
-            else
-            {
-                throw new NotImplementedException(opReturnInfo.ToString());
-            }
-        }
-
-        public string ClrDeclString(IArgument arg)
-        {
-            string typeName;
-            if (arg.ArgType is FieldType ftype)
-            {
-                typeName = ClrFieldType(ftype);
-            }
-            else if (arg.ArgType is Entity entity)
-            {
-                // TODO: This is incorrect
-                typeName = GetTypeName(entity, GeneratedType.Entity);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
+            string typeName = MapToClrTypeName(arg.Type);
             return $"{typeName} {arg.Name}";
         }
 

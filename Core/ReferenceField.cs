@@ -4,10 +4,13 @@ namespace Sharara.EntityCodeGen.Core
     {
         public const string XmlTypeName = "ref";
 
-        public string EntityName { get; set; } = "";
+        public ReferenceField(FieldType.EntityNameRef nameRef)
+            : base(nameRef)
+        {
+        }
 
-        public ReferenceField()
-            : base(FieldType.Ref)
+        public ReferenceField(FieldType.EntityRef etyRef)
+            : base(etyRef)
         {
         }
 

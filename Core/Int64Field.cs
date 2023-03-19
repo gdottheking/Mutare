@@ -7,7 +7,7 @@ namespace Sharara.EntityCodeGen.Core
         public long MaxValue { get; set; } = long.MaxValue;
 
         public Int64Field()
-            : base(FieldType.Int64)
+            : base(FieldType.Int64.Instance)
         {
         }
 

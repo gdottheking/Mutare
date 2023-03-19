@@ -36,31 +36,6 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine(";")
                 .WriteLine();
         }
-
-        protected string CalcReturnType(Object op)
-        {
-            if (op is FieldType fieldType)
-            {
-                if (fieldType == FieldType.None)
-                {
-                    return "void";
-                }
-                return context.ClrFieldType(fieldType);
-            }
-            else if (op is Entity ety)
-            {
-                return context.GetTypeName(ety, GeneratedType.Entity);
-            }
-            else if (op is OperationInfo.Many many)
-            {
-                string clrType = CalcReturnType(many.ItemType);
-                return $"IEnumerable<{clrType}>";
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
     }
 
 }

@@ -191,6 +191,10 @@ namespace Sharara.EntityCodeGen
                         field = ReadInt64Field(el);
                         break;
 
+                    case Int32Field.XmlTypeName:
+                        field = ReadInt32Field(el);
+                        break;
+
                     case DateTimeField.XmlTypeName:
                         field = ReadDateTimeField(el);
                         break;
@@ -207,12 +211,35 @@ namespace Sharara.EntityCodeGen
                         field = ReadRefField(el);
                         break;
 
+                    case ListField.XmlTypeName:
+                        field = ReadListField(el);
+                        break;
+
                     default:
                         throw new InvalidDataException($"Unknown element: <{el.Name}> contained under <{FieldsElementName}>");
                 }
                 fields.Add(field);
             }
             return fields;
+        }
+
+        private ListField ReadListField(XmlElement el)
+        {
+            string itemTypeName = MustGetString(el, "item");
+            FieldType itemType = itemTypeName switch
+            {
+                DateTimeField.XmlTypeName => FieldType.DateTime.Instance,
+                Float64Field.XmlTypeName => FieldType.Float64.Instance,
+                Int32Field.XmlTypeName => FieldType.Int32.Instance,
+                Int64Field.XmlTypeName => FieldType.Int64.Instance,
+                StringField.XmlTypeName => FieldType.String.Instance,
+                ReferenceField.XmlTypeName => new FieldType.EntityNameRef(itemTypeName),
+                _ => throw new NotSupportedException()
+            };
+
+            var listField = new ListField(itemType);
+            ReadCoreFieldAttributes(listField, el);
+            return listField;
         }
 
         private Float64Field ReadFloat64Field(XmlElement el)
@@ -224,16 +251,23 @@ namespace Sharara.EntityCodeGen
 
         private ReferenceField ReadRefField(XmlElement el)
         {
-            var field = new ReferenceField();
+            var entityName = MustGetString(el, "entity");
+            var fieldType = new FieldType.EntityNameRef(entityName);
+            var field = new ReferenceField(fieldType);
             ReadCoreFieldAttributes(field, el);
-            field.EntityName = MustGetString(el, "entity");
-
             return field;
         }
 
         Int64Field ReadInt64Field(XmlElement el)
         {
             var field = new Int64Field();
+            ReadCoreFieldAttributes(field, el);
+            return field;
+        }
+
+        Int32Field ReadInt32Field(XmlElement el)
+        {
+            var field = new Int32Field();
             ReadCoreFieldAttributes(field, el);
             return field;
         }

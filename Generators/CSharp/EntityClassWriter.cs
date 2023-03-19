@@ -66,40 +66,64 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             codeWriter.WriteLine();
         }
 
+        void WriteClrField(Field field)
+        {
+            WriteField(field, context.MapToClrTypeName(field.FieldType));
+        }
+
         public void VisitStringField(StringField field)
         {
-            WriteField(field, context.ClrFieldType(field.FieldType));
+            WriteClrField(field);
         }
 
         public void VisitInt64Field(Int64Field field)
         {
-            WriteField(field, context.ClrFieldType(field.FieldType));
+            WriteClrField(field);
+        }
+
+        public void VisitInt32Field(Int32Field field)
+        {
+            WriteClrField(field);
         }
 
         public void VisitFloat64Field(Float64Field field)
         {
-            WriteField(field, context.ClrFieldType(field.FieldType));
+            WriteClrField(field);
+
         }
 
         public void VisitDateTimeField(DateTimeField field)
         {
-            WriteField(field, context.ClrFieldType(field.FieldType));
+            WriteClrField(field);
+
         }
 
         public void VisitReferenceField(ReferenceField field)
         {
-            if (!schema.HasEntityName(field.EntityName))
+            Entity refEntity;
+            if (field.FieldType is FieldType.EntityNameRef nameRef)
             {
-                throw new InvalidOperationException($"Unknown entity: {field.EntityName}");
+                if (!schema.HasEntityName(nameRef.EntityName))
+                {
+                    throw new InvalidOperationException($"Unknown entity: {nameRef.EntityName}");
+                }
+                refEntity = schema.GetEntityByName(nameRef.EntityName);
+            }
+            else if (field.FieldType is FieldType.EntityRef ety)
+            {
+                refEntity = ety.Entity;
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
 
-            var refEntity = schema.GetEntityByName(field.EntityName);
             if (refEntity is RecordEntity refRecord)
             {
                 string refTypeName = context.GetTypeName(refEntity, GeneratedType.Entity);
                 foreach (var fkField in refRecord.Keys())
                 {
-                    string fkClrType = context.ClrFieldType(fkField.FieldType, true);
+                    string fkClrType = context.MapToClrTypeName(fkField.FieldType, true);
                     WriteFieldAnnotations(field);
                     codeWriter
                         .WriteLine($"public {fkClrType} {field.Name}{fkField.Name} {{ get; set; }}");
@@ -117,5 +141,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             }
         }
 
+        public void VisitListField(ListField listField)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

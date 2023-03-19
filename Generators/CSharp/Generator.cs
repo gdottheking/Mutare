@@ -54,6 +54,10 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             using var classCW = context.GetWriter(GeneratedType.RepoClass);
             var classGen = new RepositoryClassWriter(service, classCW, context);
             classGen.Generate();
+
+            using var serviceCW = context.GetWriter(GeneratedType.Service);
+            var serviceGen = new ServiceClassWriter(service, serviceCW, context);
+            serviceGen.Generate();
         }
     }
 }

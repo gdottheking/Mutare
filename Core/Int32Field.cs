@@ -1,19 +1,19 @@
 namespace Sharara.EntityCodeGen.Core
 {
-    class Float64Field : Field
+    class Int32Field : Field
     {
-        public const string XmlTypeName = "f64";
+        public const string XmlTypeName = "i32";
         public long MinValue { get; set; } = long.MinValue;
         public long MaxValue { get; set; } = long.MaxValue;
 
-        public Float64Field()
-            : base(FieldType.Float64.Instance)
+        public Int32Field()
+            : base(FieldType.Int32.Instance)
         {
         }
 
         public override void Accept(IFieldVisitor visitor)
         {
-            visitor.VisitFloat64Field(this);
+            visitor.VisitInt32Field(this);
         }
     }
 }

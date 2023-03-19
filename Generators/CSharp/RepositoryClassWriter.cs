@@ -91,7 +91,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             OpenMethod(operationInfo);
 
-            string opReturnType = context.ClrTypeOfReturnValue(operationInfo.ReturnType);
+            string opReturnType = context.MapToClrTypeName(operationInfo.ReturnType);
 
             codeWriter.WriteLines(
                 $"var num = dbContext.{operationInfo.Entity.Name}.LongCount();",
@@ -116,7 +116,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             OpenMethod(operationInfo);
 
             codeWriter.WriteLines(
-                $"await dbContext.{operationInfo.Entity.Name}.AddAsync({operationInfo.Entity.Name});",
+                $"await dbContext.{operationInfo.Entity.Name}.AddAsync({operationInfo.Arguments[0].Name});",
                 "await dbContext.SaveChangesAsync();"
             );
 
@@ -130,7 +130,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             var countArg = args[args.Length-1];
             OpenMethod(operationInfo);
 
-            var retType = context.ClrTypeOfReturnValue(operationInfo.ReturnType);
+            var retType = context.MapToClrTypeName(operationInfo.ReturnType);
 
             codeWriter.WriteLines(
                 $"{idxArg.Name} = Math.Max(0, {idxArg.Name});",

@@ -34,17 +34,24 @@ namespace Sharara.EntityCodeGen.Core
         private void AddOperations(RecordEntity record)
         {
             var pkArgs = record.Keys().Select(
-                k => new FieldTypeArgument(k.FieldType, k.Name)
+                k => new Argument(k.FieldType, k.Name)
             ).ToArray();
 
             operations.Add(new OperationInfo(record, OperationType.Count));
             operations.Add(new OperationInfo(record, OperationType.Delete, pkArgs));
             operations.Add(new OperationInfo(record, OperationType.Get, pkArgs));
-            operations.Add(new OperationInfo(record, OperationType.List,
-                new FieldTypeArgument(FieldType.Int64, "pageIndex"),
-                new FieldTypeArgument(FieldType.Int64, "pageSize")
-                ));
-            operations.Add(new OperationInfo(record, OperationType.Put, new EntityArgument(record)));
+            operations.Add(
+                new OperationInfo(record, OperationType.List,
+                    new Argument(FieldType.Int64.Instance, "page"),
+                    new Argument(FieldType.Int64.Instance, "count")
+                )
+            );
+            operations.Add(
+                new OperationInfo(record,
+                    OperationType.Put,
+                    new Argument(new FieldType.EntityRef(record), record.Name!.ToLower())
+                )
+            );
         }
 
     }

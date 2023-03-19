@@ -7,6 +7,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         Entity,
         Converter,
         RepoInterface,
-        RepoClass
+        RepoClass,
+        Service
     }
 }

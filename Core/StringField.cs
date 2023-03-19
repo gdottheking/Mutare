@@ -8,7 +8,7 @@ namespace Sharara.EntityCodeGen.Core
         public long MaxLength { get; set; } = long.MaxValue;
 
         public StringField()
-            : base(FieldType.String)
+            : base(FieldType.String.Instance)
         {
         }
 
