@@ -36,10 +36,19 @@ namespace Sharara.EntityCodeGen.Generators
             return this;
         }
 
-        public CodeWriter WriteLine(string content)
+        public CodeWriter WriteLine(string line)
         {
-            this.Write(content);
+            this.Write(line);
             this.WriteLine();
+            return this;
+        }
+
+        public CodeWriter WriteLines(params string[] lines)
+        {
+            foreach (var line in lines)
+            {
+                WriteLine(line);
+            }
             return this;
         }
 

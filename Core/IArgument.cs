@@ -2,7 +2,7 @@ namespace Sharara.EntityCodeGen.Core
 {
     interface IArgument
     {
-        Object ArgType { get; }
+        object? ArgType { get; }
         string? Name { get; }
     }
 

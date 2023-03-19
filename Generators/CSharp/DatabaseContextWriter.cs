@@ -2,26 +2,22 @@ using Sharara.EntityCodeGen.Core;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    internal class DbContextGen : ClassWriter
+    internal class DatabaseContextWriter : ClassWriter
     {
         private Schema schema;
-        private ICodeGeneratorContext codeWriterProvider;
+        private CodeGeneratorContext codeWriterProvider;
 
-        static readonly string[] imports = new string[] {
-            "using System;",
-            "using System.Data;",
-            "using System.Data.Entity;",
-            "using System.Diagnostics.CodeAnalysis;"
-        };
-
-        public DbContextGen(Schema definition, CodeWriter codeWriter, ICodeGeneratorContext codeWriterProvider)
-            :base(codeWriter)
+        public DatabaseContextWriter(Schema definition,
+            CodeWriter codeWriter,
+            CodeGeneratorContext codeWriterProvider)
+            : base(codeWriter)
         {
             this.schema = definition;
             this.codeWriterProvider = codeWriterProvider;
+            Imports.Add("using System.Data;");
+            Imports.Add("using System.Diagnostics.CodeAnalysis;");
+            Imports.Add("using Microsoft.EntityFrameworkCore;");
         }
-
-        protected override IEnumerable<string> Imports => imports;
 
         protected override string OutputTypeName => "DatabaseContext";
 
@@ -46,6 +42,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override void WriteMethods()
         {
+            WriteOnConfiguringMethod();
+            WriteMethodOnModelCreating();
+            //WriteMethodValidateEntity();
+        }
+
+        protected override void WriteConstructor() {
             // Constructor
             codeWriter.WriteLine($"public {OutputTypeName}([NotNullAttribute] DbContextOptions options)")
                 .Indent()
@@ -55,22 +57,58 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine($"public {OutputTypeName}()")
                 .WriteLine("{")
                 .WriteLine("}");
-
-            codeWriter.WriteLine()
-                .WriteLine("protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {")
-                .Indent()
-                .WriteLine("base.OnConfiguring(optionsBuilder);")
-                .UnIndent()
-                .WriteLine("}")
-                .WriteLine();
-
-            codeWriter.WriteLine("protected override void OnModelCreating(ModelBuilder builder) {")
-                .Indent()
-                .WriteLine("base.OnModelCreating(builder);")
-                .UnIndent()
-                .WriteLine("}")
-                .WriteLine();
         }
+
+        private void WriteOnConfiguringMethod()
+        {
+            codeWriter.WriteLine()
+            .WriteLine("protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {")
+            .Indent()
+            .WriteLine("base.OnConfiguring(optionsBuilder);")
+            .UnIndent()
+            .WriteLine("}")
+            .WriteLine();
+        }
+
+        private void WriteMethodOnModelCreating()
+        {
+            codeWriter.WriteLine("protected override void OnModelCreating(ModelBuilder builder) {")
+                            .Indent()
+                            .WriteLine("base.OnModelCreating(builder);")
+                            .UnIndent()
+                            .WriteLine("}")
+                            .WriteLine();
+        }
+
+        // private void WriteMethodValidateEntity()
+        // {
+        //     codeWriter.WriteLines(
+        //         "protected override DbEntityValidationResult ValidateEntity(",
+        //         "   System.Data.Entity.Infrastructure.DbEntityEntry entityEntry,",
+        //         "   IDictionary<object, object> items)",
+        //         "{")
+        //         .Indent();
+
+        //     codeWriter.WriteLine("var result = new DbEntityValidationResult(entityEntry, new List<DbValidationError>());");
+        //     codeWriter.WriteLine()
+        //         .WriteLine("// TODO: Custom validation here!")
+        //         .WriteLine();
+
+        //     codeWriter.WriteLine("if (result.ValidationErrors.Count > 0)")
+        //         .WriteLine("{")
+        //         .Indent()
+        //         .WriteLine("return result;")
+        //         .UnIndent()
+        //         .WriteLine("}")
+        //         .WriteLine("else")
+        //         .WriteLine("{")
+        //         .Indent()
+        //         .WriteLine("return base.ValidateEntity(entityEntry, items);")
+        //         .UnIndent()
+        //         .WriteLine("}")
+        //         .UnIndent()
+        //         .WriteLine("}");
+        // }
 
         private void WriteDbSet(RecordEntity rec)
         {

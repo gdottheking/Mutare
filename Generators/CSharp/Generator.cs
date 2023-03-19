@@ -4,10 +4,10 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 {
     internal partial class Generator
     {
-        private ICodeGeneratorContext context;
+        private CodeGeneratorContext context;
         private Service service;
 
-        public Generator(Service service, ICodeGeneratorContext codeWriterProvider)
+        public Generator(Service service, CodeGeneratorContext codeWriterProvider)
         {
             this.context = codeWriterProvider;
             this.service = service;

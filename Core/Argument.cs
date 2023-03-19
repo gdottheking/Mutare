@@ -16,6 +16,11 @@ namespace Sharara.EntityCodeGen.Core
 
         public string? Name { get; set; }
 
-        object IArgument.ArgType => ArgType;
+        object? IArgument.ArgType => ArgType;
+
+        public override string ToString()
+        {
+            return $"{ArgType}({Name})";
+        }
     }
 }

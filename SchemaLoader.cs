@@ -28,11 +28,7 @@ namespace Sharara.EntityCodeGen
             xnsmgr.AddNamespace("csharp", NS_CSHARP);
 
             // Get the root element
-            XmlElement root = doc.DocumentElement;
-
-            List<RecordEntity> records = new List<RecordEntity>();
-            List<EnumEntity> enums = new List<EnumEntity>();
-
+            XmlElement? root = doc.DocumentElement;
             // Loop through each child element
             if (root == null)
             {
@@ -42,6 +38,8 @@ namespace Sharara.EntityCodeGen
             var cSharpNamespace = MustGetString(root, "csharp:namespace");
             var protoPackageName = MustGetString(root, "pb:package");
 
+            var records = new List<RecordEntity>();
+            var enums = new List<EnumEntity>();
             foreach (XmlNode node in root.ChildNodes)
             {
                 if (node.NodeType != XmlNodeType.Element)

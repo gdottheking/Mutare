@@ -9,5 +9,10 @@ namespace Sharara.EntityCodeGen.Core
 
         public  abstract void Validate();
 
+        public override string ToString()
+        {
+            return $"{this.GetType().Name}({Name})";
+        }
+
     }
 }

@@ -5,22 +5,22 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
     internal class EntityClassWriter : ClassWriter, IFieldVisitor
     {
         private Schema schema;
-        private ICodeGeneratorContext context;
+        private CodeGeneratorContext context;
         private readonly RecordEntity record;
-        static readonly string[] imports = new string[]{
-            "using System.ComponentModel.DataAnnotations;",
-            "using System.ComponentModel.DataAnnotations.Schema;"
-        };
 
-        public EntityClassWriter(RecordEntity record, Schema definition, CodeWriter codeWriter, ICodeGeneratorContext context)
+        public EntityClassWriter(RecordEntity record,
+            Schema definition,
+            CodeWriter codeWriter,
+            CodeGeneratorContext context)
             : base(codeWriter)
         {
             this.record = record;
             this.schema = definition;
             this.context = context;
-        }
 
-        protected override IEnumerable<string> Imports => imports;
+            this.Imports.Add("using System.ComponentModel.DataAnnotations;");
+            this.Imports.Add("using System.ComponentModel.DataAnnotations.Schema;");
+        }
 
         protected override string OutputTypeName => context.GetTypeName(record, GeneratedType.Entity);
 

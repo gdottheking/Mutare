@@ -2,24 +2,24 @@ using Sharara.EntityCodeGen.Core;
 
 namespace Sharara.EntityCodeGen.Generators.Protobuf
 {
-    internal class MessageGen : IEntityVisitor, IFieldVisitor, IDisposable
+    internal class MessageGen : IEntityVisitor, IFieldVisitor
     {
         private CodeWriter codeWriter;
-        private Schema schema;
+        private Service service;
         private RpcServiceGen rpcServiceGen = new RpcServiceGen();
 
-        public MessageGen(Schema definition, CodeWriter codeWriter)
+        public MessageGen(Service service, CodeWriter codeWriter)
         {
             this.codeWriter = codeWriter;
-            this.schema = definition;
+            this.service = service;
         }
 
         public void Generate()
         {
             var lines = new string[] {
-                "syntax = \"proto3\"",
-                $"option csharp_namespace = \"{schema.Configuration.CSharpNamespace}\";",
-                $"package {schema.Configuration.ProtoPackage};"
+                "syntax = \"proto3\";",
+                $"option csharp_namespace = \"{service.Schema.Configuration.CSharpNamespace}.Proto\";",
+                $"package {service.Schema.Configuration.ProtoPackage};"
             };
 
             foreach (var line in lines)
@@ -29,9 +29,9 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
             codeWriter.WriteLine();
 
-            rpcServiceGen.GenerateRpcService(schema, codeWriter);
+            rpcServiceGen.GenerateRpcService(service, codeWriter);
 
-            foreach (var entity in schema.Entities)
+            foreach (var entity in service.Schema.Entities)
             {
                 entity.Accept(this);
                 codeWriter.WriteLine();
@@ -40,7 +40,6 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         public void VisitRecord(RecordEntity entity)
         {
-
             codeWriter.WriteLine($"message {entity.Name} {{");
             codeWriter.Indent();
 
@@ -116,39 +115,33 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         public void VisitReferenceField(ReferenceField field)
         {
-            if (!schema.HasEntityName(field.EntityName))
+            if (!service.Schema.HasEntityName(field.EntityName))
             {
                 throw new InvalidOperationException($"Unknown entity: {field.EntityName}");
             }
 
-            var refEntity = schema.GetEntityByName(field.EntityName);
+            var refEntity = service.Schema.GetEntityByName(field.EntityName);
             if (refEntity is RecordEntity refRecord)
             {
+                int offset = 0;
                 foreach (var fkField in refRecord.Keys())
                 {
-                    codeWriter.WriteLine("// TODO: Reference field");
-                    codeWriter.WriteLine($"public {ProtoFieldType(fkField)} {field.Name}{fkField.Name} {{ get; set; }}");
+                    string fieldType = ProtoFieldType(fkField);
+                    string fieldName = field.Name + fkField.Name;
+                    int protoId = field.ProtoId + offset++;
+                    codeWriter.WriteLine($"{fieldType} {fieldName} = {protoId};");
                 }
             }
             else if (refEntity is EnumEntity refEnum)
             {
-                codeWriter.WriteLine("// TODO: Reference field");
-                codeWriter.WriteLine($"public {refEnum.Name} {field.Name} {{ get; set; }}");
+                codeWriter.WriteLine($"{refEnum.Name} {field.Name} = {field.ProtoId};");
             }
         }
 
         public void VisitEnumValue(EnumValue value, int offset, int count)
         {
-            codeWriter.Write($"{value.Name} = {value.Value}");
-            if (offset < count - 1)
-            {
-                codeWriter.Write(",");
-            }
-            codeWriter.WriteLine();
+            codeWriter.WriteLine($"{value.Name} = {value.Value};");
         }
 
-        public void Dispose()
-        {
-        }
     }
 }

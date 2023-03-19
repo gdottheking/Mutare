@@ -4,20 +4,18 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 {
     class RepositoryInterfaceWriter : ClassWriter
     {
-        protected readonly ICodeGeneratorContext context;
+        protected readonly CodeGeneratorContext context;
 
         protected readonly Service service;
 
         public RepositoryInterfaceWriter(Service service,
             CodeWriter codeWriter,
-            ICodeGeneratorContext context)
+            CodeGeneratorContext context)
             : base(codeWriter)
         {
             this.service = service;
             this.context = context;
         }
-
-        protected override IEnumerable<string> Imports => Enumerable.Empty<string>();
 
         protected override string ClassKeyword => "interface";
 
@@ -32,17 +30,11 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             service.Operations.ToList().ForEach(WriteMethod);
         }
 
-        protected virtual void WriteMethod(Operation op)
+        protected virtual void WriteMethod(OperationInfo op)
         {
-            codeWriter.Write(MethodSignature(op))
+            codeWriter.Write(context.ClrDeclString(op))
                 .WriteLine(";")
                 .WriteLine();
-        }
-
-        protected string MethodSignature(Operation op){
-            string @params = string.Join(", ", op.Arguments.Select(Format));
-            string returnType = CalcReturnType(op.ReturnType);
-            return $"{returnType} {op.Name}({@params})";
         }
 
         protected string CalcReturnType(Object op)
@@ -59,7 +51,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             {
                 return context.GetTypeName(ety, GeneratedType.Entity);
             }
-            else if (op is Operation.Many many)
+            else if (op is OperationInfo.Many many)
             {
                 string clrType = CalcReturnType(many.ItemType);
                 return $"IEnumerable<{clrType}>";
@@ -68,26 +60,6 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             {
                 throw new NotImplementedException();
             }
-        }
-
-        protected string Format(IArgument arg)
-        {
-            string typeName;
-            if (arg.ArgType is FieldType ftype)
-            {
-                typeName = context.ClrFieldType(ftype);
-            }
-            else if (arg.ArgType is Entity entity)
-            {
-                // TODO: This is incorrect
-                typeName = context.GetTypeName(entity, GeneratedType.Entity);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
-            return $"{typeName} {arg.Name}";
         }
     }
 

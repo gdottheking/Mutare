@@ -3,7 +3,6 @@
     xmlns:pb="https://codegen.sharara.com/protobuf/v1"
     xmlns:db="https://codegen.sharara.com/database/v1"
     xmlns:csharp="https://codegen.sharara.com/csharp/v1"
-
     csharp:namespace="Sharara.Services.Kumusha.Generated"
     pb:package="sharara.services.kumusha"
 >
@@ -24,20 +23,20 @@
         <record name="Business">
             <fields>
                 <i64 name="Id" required="true" key="true" pb:id="1" />
-                <s name="Title" minLength="3" maxLength="255" checkOnUpdate="true" pb:id="2" />
-                <ref name="Address" entity="Address" pb:id="3"/>
-                <ref name="Status" entity="RecordStatus" pb:id="4"/>
+                <s name="Title" minLength="3" maxLength="255" required="true" checkOnUpdate="true" pb:id="2" />
+                <ref name="Address" entity="Address" pb:id="3" />
+                <ref name="Status" entity="RecordStatus" pb:id="4" />
             </fields>
         </record>
 
         <record name="Address">
             <fields>
-                <i64 name="Id" required="true" key="true" pb:id="0"/>
-                <s name="Line1" required="true" pb:id="1"/>
-                <s name="Line2" pb:id="2"/>
-                <s name="City"  pb:id="3"/>
-                <s name="Country" pb:id="4"/>
-                <s name="PostalCode" required="true" pb:id="5"/>
+                <i64 name="Id" required="true" key="true" pb:id="1" />
+                <s name="Line1" required="true" pb:id="2" />
+                <s name="Line2" pb:id="3" />
+                <s name="City" pb:id="4" />
+                <s name="Country" pb:id="5" />
+                <s name="PostalCode" required="true" pb:id="6" />
             </fields>
         </record>
 

@@ -7,17 +7,17 @@ namespace Sharara.EntityCodeGen
 {
     public partial class Program
     {
-        private const string OutputFolder = "Generated";
+        private const string OutputFolder = "../Sharara.Services.Kumusha/Generated";
 
         static void Main()
         {
             Console.WriteLine("Loading schema");
-            var schema = (new SchemaLoader()).ReadDocument("definition.xml");
+            var schema = (new SchemaLoader()).ReadDocument("kumusha.xml");
             var service = new Service(schema);
 
             CleanOutputFolder();
 
-            var codeWriterProvider = new DefaultCodeWriterHelper(OutputFolder);
+            var codeWriterProvider = new CodeGeneratorContext(OutputFolder);
 
             Console.WriteLine("Generating Entity classes");
             var generator = new Generator(service, codeWriterProvider);
@@ -25,12 +25,12 @@ namespace Sharara.EntityCodeGen
 
             Console.WriteLine("Generating DatabaseContext");
             var dbCtxWriter = new CodeWriter(File.CreateText($"{OutputFolder}/DatabaseContext.cs"));
-            var dbContextGen = new DbContextGen(schema, dbCtxWriter, codeWriterProvider);
+            var dbContextGen = new DatabaseContextWriter(schema, dbCtxWriter, codeWriterProvider);
             dbContextGen.Generate();
 
             Console.WriteLine("Generating proto file");
-            var protoWriter = new CodeWriter(File.CreateText($"{OutputFolder}/output.proto"));
-            var protoGen = new MessageGen(schema, protoWriter);
+            var protoWriter = new CodeWriter(File.CreateText($"{OutputFolder}/AutoGenService.proto"));
+            var protoGen = new MessageGen(service, protoWriter);
             protoGen.Generate();
         }
 

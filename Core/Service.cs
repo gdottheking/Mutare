@@ -4,9 +4,9 @@ namespace Sharara.EntityCodeGen.Core
     {
         private readonly Schema schema;
 
-        private readonly List<Operation> operations = new List<Operation>();
+        private readonly List<OperationInfo> operations = new List<OperationInfo>();
 
-        internal ICollection<Operation> Operations => operations.AsReadOnly();
+        internal ICollection<OperationInfo> Operations => operations.AsReadOnly();
 
         internal Schema Schema => schema;
 
@@ -37,14 +37,14 @@ namespace Sharara.EntityCodeGen.Core
                 k => new FieldTypeArgument(k.FieldType, k.Name)
             ).ToArray();
 
-            operations.Add(new Operation(record, OperationType.Count));
-            operations.Add(new Operation(record, OperationType.Delete, pkArgs));
-            operations.Add(new Operation(record, OperationType.Get, pkArgs));
-            operations.Add(new Operation(record, OperationType.List,
+            operations.Add(new OperationInfo(record, OperationType.Count));
+            operations.Add(new OperationInfo(record, OperationType.Delete, pkArgs));
+            operations.Add(new OperationInfo(record, OperationType.Get, pkArgs));
+            operations.Add(new OperationInfo(record, OperationType.List,
                 new FieldTypeArgument(FieldType.Int64, "pageIndex"),
                 new FieldTypeArgument(FieldType.Int64, "pageSize")
                 ));
-            operations.Add(new Operation(record, OperationType.Put, new EntityArgument(record)));
+            operations.Add(new OperationInfo(record, OperationType.Put, new EntityArgument(record)));
         }
 
     }

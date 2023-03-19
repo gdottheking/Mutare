@@ -1,3 +1,4 @@
+
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
     // Helper for writing C# classes
@@ -10,13 +11,13 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.codeWriter = codeWriter;
         }
 
-        protected abstract IEnumerable<string> Imports { get; }
-
-        protected abstract string OutputTypeName { get; }
-
-        protected virtual string? Implements => "Object";
+        protected virtual string? Implements => null;
 
         protected virtual string ClassKeyword { get; } = "class";
+
+        protected List<string> Imports { get; } = new List<string>();
+
+        protected abstract string OutputTypeName { get; }
 
         protected abstract string Namespace { get; }
 
@@ -34,11 +35,18 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         protected virtual void WriteBody()
         {
             WriteFields();
+            WriteConstructor();
             WriteMethods();
         }
 
         protected virtual void WriteImports()
         {
+            codeWriter.WriteLines("using System;",
+            "using System.Linq;",
+            "using System.Collections;",
+            "using System.Collections.Generic;",
+            "using System.Threading.Tasks;");
+
             foreach (var str in Imports)
             {
                 codeWriter.WriteLine(str);
@@ -77,6 +85,10 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         }
 
         protected virtual void WriteFields()
+        {
+        }
+
+        protected virtual void WriteConstructor()
         {
         }
 

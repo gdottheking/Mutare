@@ -5,18 +5,16 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
     class EnumWriter : ClassWriter
     {
         private readonly EnumEntity enumEntity;
-        private readonly ICodeGeneratorContext helper;
+        private readonly CodeGeneratorContext helper;
         private readonly Schema schema;
 
-        public EnumWriter(Schema schema, EnumEntity enumEntity, CodeWriter codeWriter, ICodeGeneratorContext helper)
+        public EnumWriter(Schema schema, EnumEntity enumEntity, CodeWriter codeWriter, CodeGeneratorContext helper)
             : base(codeWriter)
         {
             this.schema = schema;
             this.enumEntity = enumEntity;
             this.helper = helper;
         }
-
-        protected override IEnumerable<string> Imports => Enumerable.Empty<string>();
 
         protected override string OutputTypeName => helper.GetTypeName(enumEntity, GeneratedType.Enum);
 

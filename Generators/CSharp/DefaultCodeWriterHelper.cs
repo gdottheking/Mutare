@@ -2,10 +2,10 @@ using Sharara.EntityCodeGen.Core;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    internal class DefaultCodeWriterHelper : ICodeGeneratorContext
+    internal class CodeGeneratorContext
     {
 
-        public DefaultCodeWriterHelper(string outputFolder)
+        public CodeGeneratorContext(string outputFolder)
         {
             OutputFolder = outputFolder;
         }
@@ -66,6 +66,59 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 FieldType.String => "string",
                 _ => throw new NotImplementedException("FieldType does not have a matching clrType")
             };
+        }
+
+        public string ClrDeclString(OperationInfo op)
+        {
+            string @params = string.Join(", ", op.Arguments.Select(ClrDeclString));
+            string returnType = ClrTypeOfReturnValue(op.ReturnType);
+            returnType = returnType.Equals("void") ? "Task" : $"Task<{returnType}>";
+            return $"{returnType} {op.Name}Async({@params})";
+        }
+
+        public string ClrTypeOfReturnValue(OperationInfo.IReturn opReturnInfo)
+        {
+            if (opReturnInfo is OperationInfo.VoidReturn)
+            {
+                return "void";
+            }
+            else if (opReturnInfo is OperationInfo.ScalarReturn sr)
+            {
+                return ClrFieldType(sr.FieldType);
+            }
+            else if (opReturnInfo is OperationInfo.EntityReturn er)
+            {
+                return GetTypeName(er.Entity, GeneratedType.Entity);
+            }
+            else if (opReturnInfo is OperationInfo.Many many)
+            {
+                string clrType = ClrTypeOfReturnValue((OperationInfo.IReturn)many.ItemType);
+                return $"IEnumerable<{clrType}>";
+            }
+            else
+            {
+                throw new NotImplementedException(opReturnInfo.ToString());
+            }
+        }
+
+        public string ClrDeclString(IArgument arg)
+        {
+            string typeName;
+            if (arg.ArgType is FieldType ftype)
+            {
+                typeName = ClrFieldType(ftype);
+            }
+            else if (arg.ArgType is Entity entity)
+            {
+                // TODO: This is incorrect
+                typeName = GetTypeName(entity, GeneratedType.Entity);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            return $"{typeName} {arg.Name}";
         }
 
     }
