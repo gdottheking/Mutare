@@ -8,7 +8,8 @@ namespace Sharara.EntityCodeGen.Core
 
         public readonly List<Field> fields = new List<Field>();
 
-        public RecordEntity(string name) : base(name)
+        public RecordEntity(string name, string pluralName)
+            : base(name, pluralName)
         {
         }
 
@@ -21,7 +22,18 @@ namespace Sharara.EntityCodeGen.Core
 
         public override void Validate()
         {
-            // Duplicates should throw
+            base.Validate();
+
+
+            foreach (var field in fields)
+            {
+                if (!fieldNameRex.IsMatch(field.Name))
+                {
+                    throw new InvalidOperationException($"FieldName {Name}.{field.Name} must be in PascalCase");
+                }
+            }
+
+            // Duplicates will throw
             try
             {
                 fields.ToDictionary(v => v.Name, v => v);

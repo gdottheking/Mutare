@@ -1,4 +1,3 @@
-using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
@@ -37,42 +36,42 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine();
         }
 
-        protected override void WriteMethod(OperationInfo operationInfo)
+        protected override void WriteMethod(IProcedure proc)
         {
-            var outputNames = new OutputNames(operationInfo);
-            switch (operationInfo.OperationType)
+            var outputNames = new OutputNames(proc);
+            switch (proc.ProcedureType)
             {
                 case OperationType.Count:
-                    WriteOpCount(operationInfo, outputNames);
+                    WriteOpCount(proc, outputNames);
                     break;
 
                 case OperationType.Put:
-                    WriteOpPut(operationInfo, outputNames);
+                    WriteOpPut(proc, outputNames);
                     break;
 
                 case OperationType.Get:
-                    WriteOpGet(operationInfo, outputNames);
+                    WriteOpGet(proc, outputNames);
                     break;
 
                 case OperationType.List:
-                    WriteOpList(operationInfo, outputNames);
+                    WriteOpList(proc, outputNames);
                     break;
 
                 case OperationType.Delete:
-                    WriteOpDelete(operationInfo, outputNames);
+                    WriteOpDelete(proc, outputNames);
                     break;
 
                 default:
-                    OpenMethod(operationInfo, outputNames);
+                    OpenMethod(proc, outputNames);
                     codeWriter.WriteLine("throw new NotImplementedException();");
                     CloseMethod();
                     break;
             }
         }
 
-        void OpenMethod(OperationInfo operationInfo, OutputNames outputNames)
+        void OpenMethod(IProcedure proc, OutputNames outputNames)
         {
-            string opName = operationInfo.Name;
+            string opName = proc.Name;
             string returnType = $"Task<proto::{outputNames.ResponseTypeName}>";
             codeWriter.WriteLines(
                     $"public override async {returnType} {opName}(",
@@ -90,9 +89,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine();
         }
 
-        void WriteOpCount(OperationInfo operationInfo, OutputNames outputNames)
+        void WriteOpCount(IProcedure proc, OutputNames outputNames)
         {
-            OpenMethod(operationInfo, outputNames);
+            OpenMethod(proc, outputNames);
 
             codeWriter.WriteLines(
                 $"var count = await this.Repository.{outputNames.MethodName}();",
@@ -103,40 +102,40 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CloseMethod();
         }
 
-        void WriteOpGet(OperationInfo operationInfo, OutputNames outputNames)
+        void WriteOpGet(IProcedure proc, OutputNames outputNames)
         {
-            OpenMethod(operationInfo, outputNames);
+            OpenMethod(proc, outputNames);
 
             codeWriter.WriteLine("throw new NotImplementedException();");
 
             CloseMethod();
         }
 
-        void WriteOpPut(OperationInfo operationInfo, OutputNames outputNames)
+        void WriteOpPut(IProcedure proc, OutputNames outputNames)
         {
-            OpenMethod(operationInfo, outputNames);
+            OpenMethod(proc, outputNames);
 
             codeWriter.WriteLine("throw new NotImplementedException();");
 
             CloseMethod();
         }
 
-        void WriteOpList(OperationInfo operationInfo, OutputNames outputNames)
+        void WriteOpList(IProcedure proc, OutputNames outputNames)
         {
-            var args = operationInfo.Arguments;
+            var args = proc.Arguments;
             var idxArg = args[args.Length - 2];
             var countArg = args[args.Length - 1];
-            OpenMethod(operationInfo, outputNames);
+            OpenMethod(proc, outputNames);
 
             codeWriter.WriteLine("throw new NotImplementedException();");
 
             CloseMethod();
         }
 
-        void WriteOpDelete(OperationInfo operationInfo, OutputNames outputNames)
+        void WriteOpDelete(IProcedure proc, OutputNames outputNames)
         {
-            string entityClassName = context.GetTypeName(operationInfo.Entity, GeneratedType.Entity);
-            OpenMethod(operationInfo, outputNames);
+            string entityClassName = context.GetTypeName(proc.Entity, GeneratedType.Entity);
+            OpenMethod(proc, outputNames);
 
             codeWriter.WriteLine("throw new NotImplementedException();");
 
@@ -145,10 +144,10 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         record OutputNames(string MethodName, string RequestTypeName, string ResponseTypeName)
         {
-            public OutputNames(OperationInfo operationInfo)
-                : this($"{operationInfo.Name}Async",
-                    $"{operationInfo.Name}Request",
-                    $"{operationInfo.Name}Response"
+            public OutputNames(IProcedure proc)
+                : this($"{proc.Name}Async",
+                    $"{proc.Name}Request",
+                    $"{proc.Name}Response"
             )
             {
             }

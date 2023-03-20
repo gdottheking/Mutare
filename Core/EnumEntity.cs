@@ -8,7 +8,8 @@ namespace Sharara.EntityCodeGen.Core
         public readonly List<EnumValue> Values = new List<EnumValue>();
         private RecordEntity? backingRecord;
 
-        public EnumEntity(string name) : base(name)
+        public EnumEntity(string name, string pluralName)
+            : base(name, pluralName)
         {
         }
 
@@ -19,6 +20,16 @@ namespace Sharara.EntityCodeGen.Core
 
         public override void Validate()
         {
+            base.Validate();
+
+            foreach (var enumValue in Values)
+            {
+                if (!fieldNameRex.IsMatch(enumValue.Name))
+                {
+                    throw new InvalidOperationException($"Enum Value {Name}.{enumValue.Name} must be in PascalCase");
+                }
+            }
+
             // Duplicates should throw
             try
             {
@@ -36,7 +47,7 @@ namespace Sharara.EntityCodeGen.Core
             // THIS IS A HACK
             if (backingRecord == null)
             {
-                backingRecord = new RecordEntity(Name);
+                backingRecord = new RecordEntity(Name, PluralName);
                 backingRecord.fields.Add(new Int64Field("Id") { IsKey = true, Required = true });
                 backingRecord.fields.Add(new StringField("Display") { MinLength = 0, MaxLength = 512 });
                 backingRecord.fields.Add(new StringField("Description") { MinLength = 0, MaxLength = 512 });

@@ -17,9 +17,9 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
                 .WriteLines($"service {Common.GrpcServiceName} ", "{")
                 .Indent();
 
-            foreach (var operationInfo in service.Operations)
+            foreach (var proc in service.Procedures)
             {
-                WriteMethod(codeWriter, operationInfo);
+                WriteMethod(codeWriter, proc);
             }
 
             codeWriter.UnIndent()
@@ -27,11 +27,11 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
                 .WriteLine();
         }
 
-        void WriteMethod(CodeWriter codeWriter, OperationInfo opInfo)
+        void WriteMethod(CodeWriter codeWriter, IProcedure proc)
         {
-            string reqMsgName = opInfo.Name + "Request";
-            string repMsgName = opInfo.Name + "Response";
-            codeWriter.WriteLine($"rpc {opInfo.Name} ({reqMsgName}) returns ({repMsgName});");
+            string reqMsgName = proc.Name + "Request";
+            string repMsgName = proc.Name + "Response";
+            codeWriter.WriteLine($"rpc {proc.Name} ({reqMsgName}) returns ({repMsgName});");
         }
 
         void WriteReqRepMsgs(Service service, CodeWriter codeWriter)
@@ -49,16 +49,16 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
                 .WriteLine("}")
                 .WriteLine();
 
-            foreach (var operationInfo in service.Operations)
+            foreach (var proc in service.Procedures)
             {
-                WriteReqRepMsgs(codeWriter, operationInfo);
+                WriteReqRepMsgs(codeWriter, proc);
                 codeWriter.WriteLine();
             }
         }
 
-        void WriteReqRepMsgs(CodeWriter codeWriter, OperationInfo opInfo)
+        void WriteReqRepMsgs(CodeWriter codeWriter, IProcedure proc)
         {
-            string repMsgName = opInfo.Name + "Response";
+            string repMsgName = proc.Name + "Response";
             codeWriter.WriteLines($"message {repMsgName}", "{")
                 .Indent()
                 .WriteLine("oneof result {")
@@ -73,7 +73,7 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
                 .WriteLine();
 
 
-            string reqMsgName = opInfo.Name + "Request";
+            string reqMsgName = proc.Name + "Request";
             codeWriter.WriteLines($"message {reqMsgName}", "{", "}");
         }
 

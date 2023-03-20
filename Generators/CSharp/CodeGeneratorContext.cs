@@ -75,12 +75,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             };
         }
 
-        public string ClrDeclString(OperationInfo op)
+        public string ClrDeclString(IProcedure proc)
         {
-            string @params = string.Join(", ", op.Arguments.Select(ClrDeclString));
-            string returnType = MapToClrTypeName(op.ReturnType);
+            string @params = string.Join(", ", proc.Arguments.Select(ClrDeclString));
+            string returnType = MapToClrTypeName(proc.ReturnType);
             returnType = returnType.Equals("void") ? "Task" : $"Task<{returnType}>";
-            return $"{returnType} {op.Name}Async({@params})";
+            return $"{returnType} {proc.Name}Async({@params})";
         }
 
         public string ClrDeclString(Argument arg)

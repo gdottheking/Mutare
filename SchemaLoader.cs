@@ -131,7 +131,8 @@ namespace Sharara.EntityCodeGen
         RecordEntity ReadRecord(XmlElement entityXmlElement)
         {
             var recName = MustGetString(entityXmlElement, "name");
-            RecordEntity entity = new RecordEntity(recName);
+            var recPluralName = MustGetString(entityXmlElement, "plural");
+            RecordEntity entity = new RecordEntity(recName, recPluralName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
             {
@@ -183,7 +184,8 @@ namespace Sharara.EntityCodeGen
         EnumEntity ReadEnum(XmlElement entityXmlElement)
         {
             var enumName = MustGetString(entityXmlElement, "name");
-            EnumEntity entity = new EnumEntity(enumName);
+            var pluralName = MustGetString(entityXmlElement, "plural");
+            EnumEntity entity = new EnumEntity(enumName, pluralName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
             {
@@ -297,6 +299,14 @@ namespace Sharara.EntityCodeGen
             OptGetInt32(el, "minLength", x => field.MinLength = x);
             OptGetInt32(el, "maxLength", x => field.MaxLength = x);
             OptGetString(el, "regex", x => field.RegexPattern = x);
+            OptGetString(el, "transform", x =>
+            {
+                foreach (var str in x.Split(","))
+                {
+                    Transform transform = Enum.Parse<Transform>(str, true);
+                    field.Transforms |= transform;
+                }
+            });
             return field;
         }
 
@@ -368,7 +378,7 @@ namespace Sharara.EntityCodeGen
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);
             string? value = el.Attributes?[attribName]?.Value;
-            ArgumentException.ThrowIfNullOrEmpty(value);
+            ArgumentException.ThrowIfNullOrEmpty(value, attribName);
             return value;
         }
 
@@ -394,7 +404,7 @@ namespace Sharara.EntityCodeGen
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);
             string? value = el.Attributes?[attribName]?.Value;
-            ArgumentException.ThrowIfNullOrEmpty(value);
+            ArgumentException.ThrowIfNullOrEmpty(value, attribName);
             return int.Parse(value);
         }
 

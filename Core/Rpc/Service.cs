@@ -6,9 +6,9 @@ namespace Sharara.EntityCodeGen.Core.Rpc
     {
         private readonly Schema schema;
 
-        private readonly List<OperationInfo> operations = new List<OperationInfo>();
+        private readonly List<IProcedure> operations = new List<IProcedure>();
 
-        internal ICollection<OperationInfo> Operations => operations.AsReadOnly();
+        internal ICollection<IProcedure> Procedures => operations.AsReadOnly();
 
         internal Schema Schema => schema;
 
@@ -33,27 +33,57 @@ namespace Sharara.EntityCodeGen.Core.Rpc
             }
         }
 
+
         private void AddOperations(RecordEntity record)
         {
             var pkArgs = record.Keys().Select(
                 k => new Argument(k.FieldType, k.Name)
             ).ToArray();
 
-            operations.Add(new OperationInfo(record, OperationType.Count));
-            operations.Add(new OperationInfo(record, OperationType.Delete, pkArgs));
-            operations.Add(new OperationInfo(record, OperationType.Get, pkArgs));
+            operations.Add(new Procedure(record, OperationType.Count));
+            operations.Add(new Procedure(record, OperationType.Delete, pkArgs));
+            operations.Add(new Procedure(record, OperationType.Get, pkArgs));
             operations.Add(
-                new OperationInfo(record, OperationType.List,
+                new Procedure(record, OperationType.List,
                     new Argument(FieldType.Int64.Instance, "page"),
                     new Argument(FieldType.Int64.Instance, "count")
                 )
             );
             operations.Add(
-                new OperationInfo(record,
+                new Procedure(record,
                     OperationType.Put,
                     new Argument(new FieldType.EntityRef(record), record.Name!.ToLower())
                 )
             );
+        }
+
+
+
+        record Procedure(Entity Entity, OperationType ProcedureType, params Argument[] Arguments)
+            : IProcedure
+        {
+            public string Name => ProcedureType switch
+            {
+                OperationType.List => $"GetAll{Entity.PluralName}",
+                OperationType.Count => $"Get{Entity.PluralName}Count",
+                _ => $"{ProcedureType}{Entity.Name}"
+            };
+
+            public FieldType ReturnType
+            {
+                get
+                {
+                    return ProcedureType switch
+                    {
+                        OperationType.List => new FieldType.List(new FieldType.EntityRef(Entity)), // HACK
+                        OperationType.Get => new FieldType.EntityRef(Entity),
+                        OperationType.Count => FieldType.Int64.Instance,
+                        OperationType.Delete => FieldType.Void.Instance,
+                        OperationType.Put => FieldType.Void.Instance,
+                        _ => throw new NotImplementedException()
+                    };
+                }
+            }
         }
 
     }

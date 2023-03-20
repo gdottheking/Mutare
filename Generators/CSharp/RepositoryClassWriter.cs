@@ -41,41 +41,41 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine();
         }
 
-        protected override void WriteMethod(OperationInfo opInfo)
+        protected override void WriteMethod(IProcedure proc)
         {
-            switch (opInfo.OperationType)
+            switch (proc.ProcedureType)
             {
                 case OperationType.Count:
-                    WriteOpCount(opInfo);
+                    WriteOpCount(proc);
                     break;
 
                 case OperationType.Put:
-                    WriteOpPut(opInfo);
+                    WriteOpPut(proc);
                     break;
 
                 case OperationType.Get:
-                    WriteOpGet(opInfo);
+                    WriteOpGet(proc);
                     break;
 
                 case OperationType.List:
-                    WriteOpList(opInfo);
+                    WriteOpList(proc);
                     break;
 
                 case OperationType.Delete:
-                    WriteOpDelete(opInfo);
+                    WriteOpDelete(proc);
                     break;
 
                 default:
-                    OpenMethod(opInfo);
+                    OpenMethod(proc);
                     codeWriter.WriteLine("throw new NotImplementedException();");
                     CloseMethod();
                     break;
             }
         }
 
-        void OpenMethod(OperationInfo operationInfo)
+        void OpenMethod(IProcedure proc)
         {
-            string opSignature = context.ClrDeclString(operationInfo);
+            string opSignature = context.ClrDeclString(proc);
             codeWriter.WriteLine("public async " + opSignature)
                 .WriteLine("{")
                 .Indent();
@@ -88,55 +88,55 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine();
         }
 
-        void WriteOpCount(OperationInfo operationInfo)
+        void WriteOpCount(IProcedure proc)
         {
-            OpenMethod(operationInfo);
+            OpenMethod(proc);
 
-            string opReturnType = context.MapToClrTypeName(operationInfo.ReturnType);
+            string opReturnType = context.MapToClrTypeName(proc.ReturnType);
 
             codeWriter.WriteLines(
-                $"var num = dbContext.{operationInfo.Entity.Name}.LongCount();",
+                $"var num = dbContext.{proc.Entity.Name}.LongCount();",
                 $"return await(new ValueTask<long>(num));"
             );
 
             CloseMethod();
         }
 
-        void WriteOpGet(OperationInfo operationInfo)
+        void WriteOpGet(IProcedure proc)
         {
-            OpenMethod(operationInfo);
+            OpenMethod(proc);
 
-            var args = string.Join(", ", operationInfo.Arguments.Select(x => x.Name));
-            codeWriter.WriteLine($"return await dbContext.{operationInfo.Entity.Name}.FindAsync({args});");
+            var args = string.Join(", ", proc.Arguments.Select(x => x.Name));
+            codeWriter.WriteLine($"return await dbContext.{proc.Entity.Name}.FindAsync({args});");
 
             CloseMethod();
         }
 
-        void WriteOpPut(OperationInfo operationInfo)
+        void WriteOpPut(IProcedure proc)
         {
-            OpenMethod(operationInfo);
+            OpenMethod(proc);
 
             codeWriter.WriteLines(
-                $"await dbContext.{operationInfo.Entity.Name}.AddAsync({operationInfo.Arguments[0].Name});",
+                $"await dbContext.{proc.Entity.Name}.AddAsync({proc.Arguments[0].Name});",
                 "await dbContext.SaveChangesAsync();"
             );
 
             CloseMethod();
         }
 
-        void WriteOpList(OperationInfo operationInfo)
+        void WriteOpList(IProcedure proc)
         {
-            var args = operationInfo.Arguments;
+            var args = proc.Arguments;
             var idxArg = args[args.Length-2];
             var countArg = args[args.Length-1];
-            OpenMethod(operationInfo);
+            OpenMethod(proc);
 
-            var retType = context.MapToClrTypeName(operationInfo.ReturnType);
+            var retType = context.MapToClrTypeName(proc.ReturnType);
 
             codeWriter.WriteLines(
                 $"{idxArg.Name} = Math.Max(0, {idxArg.Name});",
                 $"var offset = (int)({idxArg.Name} * {countArg.Name});",
-                $"var items = dbContext.{operationInfo.Entity.Name}",
+                $"var items = dbContext.{proc.Entity.Name}",
                 $"   .Skip(offset)",
                 $"   .Take((int) {countArg.Name})",
                 "   .AsNoTracking();",
@@ -146,16 +146,16 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CloseMethod();
         }
 
-        void WriteOpDelete(OperationInfo operationInfo)
+        void WriteOpDelete(IProcedure proc)
         {
-            string entityClassName = context.GetTypeName(operationInfo.Entity, GeneratedType.Entity);
-            OpenMethod(operationInfo);
+            string entityClassName = context.GetTypeName(proc.Entity, GeneratedType.Entity);
+            OpenMethod(proc);
 
-            var assigns = string.Join(", ", operationInfo.Arguments.Select(x => $"{x.Name} = {x.Name}"));
+            var assigns = string.Join(", ", proc.Arguments.Select(x => $"{x.Name} = {x.Name}"));
 
             codeWriter.WriteLines(
                 $"var ety = new {entityClassName} {{ {assigns} }};",
-                $"dbContext.{operationInfo.Entity.Name}.Remove(ety);",
+                $"dbContext.{proc.Entity.Name}.Remove(ety);",
                 "await dbContext.SaveChangesAsync();"
             );
 

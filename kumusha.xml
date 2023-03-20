@@ -8,7 +8,7 @@
 >
 
     <enums>
-        <enum name="RecordStatus">
+        <enum name="RecordStatus" plural="RecordStatuses">
             <value name="Draft">0</value>
             <value name="PendingReview">10</value>
             <value name="InReview">20</value>
@@ -20,23 +20,36 @@
 
     <records>
 
-        <record name="Business">
+        <record name="Test" plural="Tests">
+            <fields>
+                <ref name="Business" entity="Business" pb:id="1" />
+                <list of="Address" name="Addresses" pb:id="2" />
+                <list of="str" name="Lines" pb:id="3" />
+                <i32 name="Height" minValue="180" maxValue="200" pb:id="4" />
+                <str name="FourLetterWord" regex="([A-Za-z]){4}"
+                    minLength="4" maxLength="4"
+                    pb:id="5" transform="toUpper,trim" />
+            </fields>
+        </record>
+
+        <record name="Business" plural="Businesses">
             <fields>
                 <i64 name="Id" required="true" key="true" pb:id="1" />
-                <s name="Title" minLength="3" maxLength="255" required="true" checkOnUpdate="true" pb:id="2" />
+                <str name="Title" minLength="3" maxLength="255" required="true" checkOnUpdate="true"
+                    pb:id="2" />
                 <ref name="Address" entity="Address" pb:id="3" />
                 <ref name="Status" entity="RecordStatus" pb:id="4" />
             </fields>
         </record>
 
-        <record name="Address">
+        <record name="Address" plural="Addresses">
             <fields>
                 <i64 name="Id" required="true" key="true" pb:id="1" />
-                <s name="Line1" required="true" pb:id="2" />
-                <s name="Line2" pb:id="3" />
-                <s name="City" pb:id="4" />
-                <s name="Country" pb:id="5" />
-                <s name="PostalCode" required="true" pb:id="6" />
+                <str name="Line1" required="true" pb:id="2" />
+                <str name="Line2" pb:id="3" />
+                <str name="City" pb:id="4" />
+                <str name="Country" pb:id="5" />
+                <str name="PostalCode" required="true" pb:id="6" />
             </fields>
         </record>
 

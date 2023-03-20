@@ -28,12 +28,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override void WriteMethods()
         {
-            service.Operations.ToList().ForEach(WriteMethod);
+            service.Procedures.ToList().ForEach(WriteMethod);
         }
 
-        protected virtual void WriteMethod(OperationInfo op)
+        protected virtual void WriteMethod(IProcedure proc)
         {
-            codeWriter.Write(context.ClrDeclString(op))
+            codeWriter.Write(context.ClrDeclString(proc))
                 .WriteLine(";")
                 .WriteLine();
         }
