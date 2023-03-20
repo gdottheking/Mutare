@@ -6,6 +6,10 @@ namespace Sharara.EntityCodeGen.Core
 
         public readonly List<Field> fields = new List<Field>();
 
+        public RecordEntity(string name) : base(name)
+        {
+        }
+
         public IEnumerable<Field> Keys() => fields.Where(f => f.IsKey);
 
         public override void Accept(IEntityVisitor visitor)

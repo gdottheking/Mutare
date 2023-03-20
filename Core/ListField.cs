@@ -4,8 +4,8 @@ namespace Sharara.EntityCodeGen.Core
     {
         public const string XmlTypeName = "list";
 
-        public ListField(FieldType itemType)
-            : base(new FieldType.List(itemType))
+        public ListField(FieldType itemType, string name)
+            : base(new FieldType.List(itemType), name)
         {
         }
 

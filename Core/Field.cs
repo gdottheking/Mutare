@@ -4,20 +4,21 @@ namespace Sharara.EntityCodeGen.Core
     {
         internal FieldType FieldType { get; }
 
-        public string Name { get; set; } = "";
+        public string Name { get; set; }
         public bool Required { get; set; }
         public bool IsKey { get; set; }
         public bool CheckOnUpdate { get; set; }
         public int ProtoId { get; set; }
 
-        protected Field(FieldType type)
+        protected Field(FieldType type, string name)
         {
             FieldType = type;
+            Name = name;
         }
 
         public override string ToString()
         {
-            return $"{Name} [{Required}]";
+            return (Required ? "*" : "") + $"{Name}:{FieldType}";
         }
 
         public virtual void Accept(IFieldVisitor visitor)

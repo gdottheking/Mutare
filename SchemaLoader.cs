@@ -63,10 +63,43 @@ namespace Sharara.EntityCodeGen
                 }
             }
 
+            ResolveReferences(records, enums);
             var schemaConfig = new SchemaConfig(cSharpNamespace, protoPackageName);
             var schema = new Schema(schemaConfig, records, enums);
             schema.Validate();
             return schema;
+        }
+
+        private void ResolveReferences(List<RecordEntity> records, List<EnumEntity> enums)
+        {
+            var entityById = new Dictionary<string, Entity>();
+            records.ForEach(x => entityById.Add(x.Name!, x));
+            enums.ForEach(x => entityById.Add(x.Name!, x));
+
+            Action<FieldType.EntityNameRef> resolve = (nameRef) =>
+            {
+                if (!entityById.ContainsKey(nameRef.EntityName))
+                {
+                    throw new InvalidOperationException($"Entity {nameRef.EntityName} not found");
+                }
+                nameRef.ResolveTo(entityById[nameRef.EntityName]);
+            };
+
+            foreach (var rec in records)
+            {
+                foreach (var field in rec.fields)
+                {
+                    if (field.FieldType is FieldType.EntityNameRef nameRef1)
+                    {
+                        resolve(nameRef1);
+                    }
+                    else if (field.FieldType is FieldType.List listf &&
+                        listf.ItemType is FieldType.EntityNameRef nameRef2)
+                    {
+                        resolve(nameRef2);
+                    }
+                }
+            }
         }
 
         List<RecordEntity> ReadRecords(XmlElement entitiesListElement)
@@ -96,8 +129,8 @@ namespace Sharara.EntityCodeGen
 
         RecordEntity ReadRecord(XmlElement entityXmlElement)
         {
-            RecordEntity entity = new RecordEntity();
-            entity.Name = MustGetString(entityXmlElement, "name");
+            var recName = MustGetString(entityXmlElement, "name");
+            RecordEntity entity = new RecordEntity(recName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
             {
@@ -148,8 +181,8 @@ namespace Sharara.EntityCodeGen
 
         EnumEntity ReadEnum(XmlElement entityXmlElement)
         {
-            EnumEntity entity = new EnumEntity();
-            entity.Name = MustGetString(entityXmlElement, "name");
+            var enumName = MustGetString(entityXmlElement, "name");
+            EnumEntity entity = new EnumEntity(enumName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
             {
@@ -225,65 +258,37 @@ namespace Sharara.EntityCodeGen
 
         private ListField ReadListField(XmlElement el)
         {
-            string itemTypeName = MustGetString(el, "item");
-            FieldType itemType = itemTypeName switch
-            {
-                DateTimeField.XmlTypeName => FieldType.DateTime.Instance,
-                Float64Field.XmlTypeName => FieldType.Float64.Instance,
-                Int32Field.XmlTypeName => FieldType.Int32.Instance,
-                Int64Field.XmlTypeName => FieldType.Int64.Instance,
-                StringField.XmlTypeName => FieldType.String.Instance,
-                ReferenceField.XmlTypeName => new FieldType.EntityNameRef(itemTypeName),
-                _ => throw new NotSupportedException()
-            };
-
-            var listField = new ListField(itemType);
-            ReadCoreFieldAttributes(listField, el);
-            return listField;
+            return (ListField)CreateField(el);
         }
 
         private Float64Field ReadFloat64Field(XmlElement el)
         {
-            var field = new Float64Field();
-            ReadCoreFieldAttributes(field, el);
-            return field;
+            return (Float64Field)CreateField(el);
         }
 
         private ReferenceField ReadRefField(XmlElement el)
         {
-            var entityName = MustGetString(el, "entity");
-            var fieldType = new FieldType.EntityNameRef(entityName);
-            var field = new ReferenceField(fieldType);
-            ReadCoreFieldAttributes(field, el);
-            return field;
+            return (ReferenceField)CreateField(el);
         }
 
         Int64Field ReadInt64Field(XmlElement el)
         {
-            var field = new Int64Field();
-            ReadCoreFieldAttributes(field, el);
-            return field;
+            return (Int64Field)CreateField(el);
         }
 
         Int32Field ReadInt32Field(XmlElement el)
         {
-            var field = new Int32Field();
-            ReadCoreFieldAttributes(field, el);
-            return field;
+            return (Int32Field)CreateField(el);
         }
 
         StringField ReadStringField(XmlElement el)
         {
-            var field = new StringField();
-            ReadCoreFieldAttributes(field, el);
-            return field;
+            return (StringField)CreateField(el);
         }
 
         DateTimeField ReadDateTimeField(XmlElement el)
         {
-            var field = new DateTimeField();
-            ReadCoreFieldAttributes(field, el);
-            return field;
+            return (DateTimeField)CreateField(el);
         }
 
         EnumValue ReadEnumValue(XmlElement el)
@@ -294,13 +299,54 @@ namespace Sharara.EntityCodeGen
             return ev;
         }
 
-        void ReadCoreFieldAttributes(Field field, XmlElement fieldXmlElement)
+        FieldType GetListItemType(XmlElement el)
         {
-            field.Name = MustGetString(fieldXmlElement, "name");
-            field.ProtoId = MustGetInt(fieldXmlElement, "pb:id");
-            field.Required = GetBool(fieldXmlElement, "required");
-            field.IsKey = GetBool(fieldXmlElement, "key");
-            field.CheckOnUpdate = GetBool(fieldXmlElement, "checkOnUpdate");
+            string itemTypeName = MustGetString(el, "of");
+            return itemTypeName switch
+            {
+                DateTimeField.XmlTypeName => FieldType.DateTime.Instance,
+                Float64Field.XmlTypeName => FieldType.Float64.Instance,
+                Int32Field.XmlTypeName => FieldType.Int32.Instance,
+                Int64Field.XmlTypeName => FieldType.Int64.Instance,
+                StringField.XmlTypeName => FieldType.String.Instance,
+                _ => new FieldType.EntityNameRef(itemTypeName)
+            };
+        }
+
+        ListField CreateListField(XmlElement el, string fieldName)
+        {
+            var itemType = GetListItemType(el);
+            return new ListField(itemType, fieldName);
+        }
+
+        Field CreateField(XmlElement el)
+        {
+            var fieldName = MustGetString(el, "name");
+            var fieldType = el.Name;
+
+            Field field = fieldType switch
+            {
+                DateTimeField.XmlTypeName => new DateTimeField(fieldName),
+                Float64Field.XmlTypeName => new Float64Field(fieldName),
+                Int32Field.XmlTypeName => new Int32Field(fieldName),
+                Int64Field.XmlTypeName => new Int64Field(fieldName),
+                ReferenceField.XmlTypeName => new ReferenceField(new FieldType.EntityNameRef(MustGetString(el, "entity")), fieldName),
+                ListField.XmlTypeName => CreateListField(el, fieldName),
+                StringField.XmlTypeName => new StringField(fieldName),
+                _ => throw new NotImplementedException(fieldType + " Unknown")
+            };
+
+            ReadCommonFieldAttributes(field, el);
+
+            return field;
+        }
+
+        void ReadCommonFieldAttributes(Field field, XmlElement el)
+        {
+            field.ProtoId = MustGetInt(el, "pb:id");
+            field.Required = GetBool(el, "required");
+            field.IsKey = GetBool(el, "key");
+            field.CheckOnUpdate = GetBool(el, "checkOnUpdate");
         }
 
         string MustGetString(XmlElement el, string attribName)

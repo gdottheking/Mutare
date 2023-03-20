@@ -69,6 +69,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 FieldType.List l => $"IEnumerable<{MapToClrTypeName(l.ItemType)}>",
                 FieldType.Void => "void",
                 FieldType.EntityRef entyRef => GetTypeName(entyRef.Entity, GeneratedType.Entity),
+                FieldType.EntityNameRef nameRef => GetTypeName(nameRef.ResolvedEntity!, GeneratedType.Entity),
                 _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
             };
         }

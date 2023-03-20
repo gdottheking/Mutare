@@ -34,20 +34,28 @@ namespace Sharara.EntityCodeGen.Core
 
         public class EntityRef : FieldType
         {
-            public EntityRef(Entity e) {
+            public EntityRef(Entity e)
+            {
                 this.Entity = e;
             }
 
-            public Entity Entity {get;}
+            public Entity Entity { get; }
         }
 
         public class EntityNameRef : FieldType
         {
-            public EntityNameRef(string name) {
+            public EntityNameRef(string name)
+            {
                 this.EntityName = name;
             }
 
-            public string EntityName {get;}
+            public string EntityName { get; }
+            public Entity? ResolvedEntity { get; private set; }
+
+            public void ResolveTo(Entity entity)
+            {
+                ResolvedEntity = entity;
+            }
         }
 
         public class List : FieldType

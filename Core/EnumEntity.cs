@@ -6,6 +6,10 @@ namespace Sharara.EntityCodeGen.Core
         public readonly List<EnumValue> Values = new List<EnumValue>();
         private RecordEntity? backingRecord;
 
+        public EnumEntity(string name) : base(name)
+        {
+        }
+
         public override void Accept(IEntityVisitor visitor)
         {
             visitor.VisitEnum(this);
@@ -30,11 +34,10 @@ namespace Sharara.EntityCodeGen.Core
             // THIS IS A HACK
             if (backingRecord == null)
             {
-                backingRecord = new RecordEntity();
-                backingRecord.Name = Name;
-                backingRecord.fields.Add(new Int64Field { Name = "Id", IsKey = true, Required = true });
-                backingRecord.fields.Add(new StringField { Name = "Display", MinLength = 0, MaxLength = 512 });
-                backingRecord.fields.Add(new StringField { Name = "Description", MinLength = 0, MaxLength = 512 });
+                backingRecord = new RecordEntity(Name);
+                backingRecord.fields.Add(new Int64Field("Id") { IsKey = true, Required = true });
+                backingRecord.fields.Add(new StringField("Display") { MinLength = 0, MaxLength = 512 });
+                backingRecord.fields.Add(new StringField("Description") { MinLength = 0, MaxLength = 512 });
             }
             return backingRecord;
         }

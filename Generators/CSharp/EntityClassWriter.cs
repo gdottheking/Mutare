@@ -143,7 +143,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         public void VisitListField(ListField listField)
         {
-            throw new NotImplementedException();
+            WriteField(listField, context.MapToClrTypeName(listField.FieldType));
         }
     }
 }

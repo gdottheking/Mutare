@@ -6,7 +6,6 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
     {
         private CodeWriter codeWriter;
         private Service service;
-        private RpcServiceGen rpcServiceGen = new RpcServiceGen();
 
         public MessageGen(Service service, CodeWriter codeWriter)
         {
@@ -29,13 +28,24 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
             codeWriter.WriteLine();
 
-            rpcServiceGen.GenerateRpcService(service, codeWriter);
-
             foreach (var entity in service.Schema.Entities)
             {
                 entity.Accept(this);
                 codeWriter.WriteLine();
             }
+
+            codeWriter.WriteLines(
+                "",
+                "// ----------------------------------------------",
+                "//                       RPC                    //",
+                "// ----------------------------------------------",
+                ""
+            );
+
+            RpcServiceGen rpcServiceGen = new RpcServiceGen();
+            rpcServiceGen.GenerateRpcService(service, codeWriter);
+
+            codeWriter.Flush();
         }
 
         public void VisitRecord(RecordEntity entity)
@@ -56,7 +66,6 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         public void VisitEnum(EnumEntity entity)
         {
-
             codeWriter.WriteLine($"enum {entity.Name} {{");
             codeWriter.Indent();
 
@@ -71,57 +80,62 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
             codeWriter.Flush();
         }
 
-        private void WriteField(Field field, string protoType)
-        {
-            codeWriter.WriteLine($"{protoType} {field.Name} = {field.ProtoId};");
-        }
-
         public void VisitField(Field field)
         {
             throw new NotImplementedException();
         }
 
-        private string ProtoFieldType(Field field)
+        private string MapToGrpcType(FieldType fieldType)
         {
-            return field.FieldType switch
+            return fieldType switch
             {
                 FieldType.DateTime => "string",
                 FieldType.Float64 => "double",
                 FieldType.Int64 => "int64",
                 FieldType.Int32 => "int32",
                 FieldType.String => "string",
-                _ => throw new NotImplementedException($"{field.FieldType} does not have a matching protobuf type")
+                FieldType.EntityRef entRef => entRef.Entity.Name,
+                FieldType.EntityNameRef nameRef =>
+                    nameRef.ResolvedEntity?.Name ??
+                    throw new InvalidOperationException("Unresolved entity " + nameRef.EntityName),
+                FieldType.List lst => $"repeated ${MapToGrpcType(lst.ItemType)}",
+                _ => throw new InvalidOperationException($"{fieldType} does not have a matching protobuf type")
             };
         }
 
-        void WriteProtoField(Field field)
+        private void WriteField(string fieldName, int protoId, string protoType)
         {
-            WriteField(field, ProtoFieldType(field));
+            codeWriter.WriteLine($"{protoType} {fieldName} = {protoId};");
+        }
+
+                void WriteField(Field field)
+        {
+            WriteField(field.Name, field.ProtoId, MapToGrpcType(field.FieldType));
         }
 
         public void VisitStringField(StringField field)
         {
-            WriteProtoField(field);
+            WriteField(field);
         }
 
         public void VisitInt64Field(Int64Field field)
         {
-            WriteProtoField(field);
+            WriteField(field);
         }
 
         public void VisitInt32Field(Int32Field field)
         {
-            WriteProtoField(field);
+            WriteField(field);
         }
 
         public void VisitFloat64Field(Float64Field field)
         {
-            WriteProtoField(field);
+            WriteField(field);
         }
 
         public void VisitDateTimeField(DateTimeField field)
         {
-            WriteProtoField(field);
+            WriteField(field);
         }
 
         public void VisitReferenceField(ReferenceField field)
@@ -144,13 +158,12 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
                 throw new NotImplementedException();
             }
 
-
             if (refEntity is RecordEntity refRecord)
             {
                 int offset = 0;
                 foreach (var fkField in refRecord.Keys())
                 {
-                    string fieldType = ProtoFieldType(fkField);
+                    string fieldType = MapToGrpcType(fkField.FieldType);
                     string fieldName = field.Name + fkField.Name;
                     int protoId = field.ProtoId + offset++;
                     codeWriter.WriteLine($"{fieldType} {fieldName} = {protoId};");
@@ -169,7 +182,9 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         public void VisitListField(ListField listField)
         {
-            throw new NotImplementedException();
+            codeWriter.Write("repeated ");
+            var type = (FieldType.List) listField.FieldType;
+            WriteField(listField.Name, listField.ProtoId, MapToGrpcType(type.ItemType));
         }
     }
 }
