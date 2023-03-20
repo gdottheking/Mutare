@@ -264,7 +264,10 @@ namespace Sharara.EntityCodeGen
 
         private Float64Field ReadFloat64Field(XmlElement el)
         {
-            return (Float64Field)CreateField(el);
+            var field = (Float64Field)CreateField(el);
+            OptGetFloat64(el, "minValue", x => field.MinValue = x);
+            OptGetFloat64(el, "maxValue", x => field.MaxValue = x);
+            return field;
         }
 
         private ReferenceField ReadRefField(XmlElement el)
@@ -274,17 +277,27 @@ namespace Sharara.EntityCodeGen
 
         Int64Field ReadInt64Field(XmlElement el)
         {
-            return (Int64Field)CreateField(el);
+            var field = (Int64Field)CreateField(el);
+            OptGetInt64(el, "minValue", x => field.MinValue = x);
+            OptGetInt64(el, "maxValue", x => field.MaxValue = x);
+            return field;
         }
 
         Int32Field ReadInt32Field(XmlElement el)
         {
-            return (Int32Field)CreateField(el);
+            var field = (Int32Field)CreateField(el);
+            OptGetInt32(el, "minValue", x => field.MinValue = x);
+            OptGetInt32(el, "maxValue", x => field.MaxValue = x);
+            return field;
         }
 
         StringField ReadStringField(XmlElement el)
         {
-            return (StringField)CreateField(el);
+            var field = (StringField)CreateField(el);
+            OptGetInt32(el, "minLength", x => field.MinLength = x);
+            OptGetInt32(el, "maxLength", x => field.MaxLength = x);
+            OptGetString(el, "regex", x => field.RegexPattern = x);
+            return field;
         }
 
         DateTimeField ReadDateTimeField(XmlElement el)
@@ -383,6 +396,50 @@ namespace Sharara.EntityCodeGen
             string? value = el.Attributes?[attribName]?.Value;
             ArgumentException.ThrowIfNullOrEmpty(value);
             return int.Parse(value);
+        }
+
+        void OptGetInt32(XmlElement el, string attribName, Action<int> callback)
+        {
+            ArgumentNullException.ThrowIfNull(el);
+            ArgumentNullException.ThrowIfNull(attribName);
+            string? attribValue = el.Attributes?[attribName]?.Value;
+            if (int.TryParse(attribValue, out int parsedValue))
+            {
+                callback(parsedValue);
+            }
+        }
+
+        void OptGetInt64(XmlElement el, string attribName, Action<long> callback)
+        {
+            ArgumentNullException.ThrowIfNull(el);
+            ArgumentNullException.ThrowIfNull(attribName);
+            string? attribValue = el.Attributes?[attribName]?.Value;
+            if (long.TryParse(attribValue, out long parsedValue))
+            {
+                callback(parsedValue);
+            }
+        }
+
+        void OptGetFloat64(XmlElement el, string attribName, Action<double> callback)
+        {
+            ArgumentNullException.ThrowIfNull(el);
+            ArgumentNullException.ThrowIfNull(attribName);
+            string? attribValue = el.Attributes?[attribName]?.Value;
+            if (double.TryParse(attribValue, out double parsedValue))
+            {
+                callback(parsedValue);
+            }
+        }
+
+        void OptGetString(XmlElement el, string attribName, Action<string> callback)
+        {
+            ArgumentNullException.ThrowIfNull(el);
+            ArgumentNullException.ThrowIfNull(attribName);
+            string? attribValue = el.Attributes?[attribName]?.Value;
+            if (attribValue != null)
+            {
+                callback(attribValue);
+            }
         }
 
     }
