@@ -57,15 +57,13 @@ namespace Sharara.EntityCodeGen.Core.Rpc
             );
         }
 
-
-
         record Procedure(Entity Entity, OperationType ProcedureType, params Argument[] Arguments)
             : IProcedure
         {
             public string Name => ProcedureType switch
             {
                 OperationType.List => $"GetAll{Entity.PluralName}",
-                OperationType.Count => $"Get{Entity.PluralName}Count",
+                OperationType.Count => $"Get{Entity.Name}Count",
                 _ => $"{ProcedureType}{Entity.Name}"
             };
 
