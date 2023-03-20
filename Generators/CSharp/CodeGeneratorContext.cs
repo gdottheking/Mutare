@@ -4,7 +4,7 @@ using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    internal class CodeGeneratorContext
+    internal partial class CodeGeneratorContext
     {
         public CodeGeneratorContext(string outputFolder)
         {
@@ -80,7 +80,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             string @params = string.Join(", ", proc.Arguments.Select(ClrDeclString));
             string returnType = MapToClrTypeName(proc.ReturnType);
             returnType = returnType.Equals("void") ? "Task" : $"Task<{returnType}>";
-            return $"{returnType} {proc.Name}Async({@params})";
+
+            // HACK: ClrDeclString isn't only called by service Generator
+            // Using it here is a hack to make sure a procedure produces the same name
+            // In all classes i.e. Service, Repository, etc.
+            var svcProc = new ServiceProcClr(proc);
+            return $"{returnType} {svcProc.MethodName}({@params})";
         }
 
         public string ClrDeclString(Argument arg)

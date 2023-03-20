@@ -38,27 +38,27 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override void WriteMethod(IProcedure proc)
         {
-            var outputNames = new OutputNames(proc);
+            var outputNames = new ServiceProcClr(proc);
             switch (proc.ProcedureType)
             {
                 case OperationType.Count:
-                    WriteOpCount(proc, outputNames);
+                    WriteProcCount(proc, outputNames);
                     break;
 
                 case OperationType.Put:
-                    WriteOpPut(proc, outputNames);
+                    WriteProcPut(proc, outputNames);
                     break;
 
                 case OperationType.Get:
-                    WriteOpGet(proc, outputNames);
+                    WriteProcGet(proc, outputNames);
                     break;
 
                 case OperationType.List:
-                    WriteOpList(proc, outputNames);
+                    WriteProcList(proc, outputNames);
                     break;
 
                 case OperationType.Delete:
-                    WriteOpDelete(proc, outputNames);
+                    WriteProcDelete(proc, outputNames);
                     break;
 
                 default:
@@ -69,7 +69,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             }
         }
 
-        void OpenMethod(IProcedure proc, OutputNames outputNames)
+        void OpenMethod(IProcedure proc, ServiceProcClr outputNames)
         {
             string opName = proc.Name;
             string returnType = $"Task<proto::{outputNames.ResponseTypeName}>";
@@ -89,7 +89,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine();
         }
 
-        void WriteOpCount(IProcedure proc, OutputNames outputNames)
+        void WriteProcCount(IProcedure proc, ServiceProcClr outputNames)
         {
             OpenMethod(proc, outputNames);
 
@@ -102,7 +102,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CloseMethod();
         }
 
-        void WriteOpGet(IProcedure proc, OutputNames outputNames)
+        void WriteProcGet(IProcedure proc, ServiceProcClr outputNames)
         {
             OpenMethod(proc, outputNames);
 
@@ -111,7 +111,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CloseMethod();
         }
 
-        void WriteOpPut(IProcedure proc, OutputNames outputNames)
+        void WriteProcPut(IProcedure proc, ServiceProcClr outputNames)
         {
             OpenMethod(proc, outputNames);
 
@@ -120,7 +120,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CloseMethod();
         }
 
-        void WriteOpList(IProcedure proc, OutputNames outputNames)
+        void WriteProcList(IProcedure proc, ServiceProcClr outputNames)
         {
             var args = proc.Arguments;
             var idxArg = args[args.Length - 2];
@@ -132,7 +132,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CloseMethod();
         }
 
-        void WriteOpDelete(IProcedure proc, OutputNames outputNames)
+        void WriteProcDelete(IProcedure proc, ServiceProcClr outputNames)
         {
             string entityClassName = context.GetTypeName(proc.Entity, GeneratedType.Entity);
             OpenMethod(proc, outputNames);
@@ -141,17 +141,5 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
             CloseMethod();
         }
-
-        record OutputNames(string MethodName, string RequestTypeName, string ResponseTypeName)
-        {
-            public OutputNames(IProcedure proc)
-                : this($"{proc.Name}Async",
-                    $"{proc.Name}Request",
-                    $"{proc.Name}Response"
-            )
-            {
-            }
-        }
-
     }
 }
