@@ -21,20 +21,71 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
             this.Imports.Add("using System.ComponentModel.DataAnnotations;");
             this.Imports.Add("using System.ComponentModel.DataAnnotations.Schema;");
+            this.Imports.Add("using System.Text.RegularExpressions;");
+        }
+
+        protected EntityClassWriter Indent()
+        {
+            codeWriter.Indent();
+            return this;
+        }
+
+        protected EntityClassWriter UnIndent()
+        {
+            codeWriter.UnIndent();
+            return this;
+        }
+
+        protected EntityClassWriter WriteLines(params string[] lines)
+        {
+            codeWriter.WriteLines(lines);
+            return this;
+        }
+
+        protected EntityClassWriter WriteLine(int count = 1)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                codeWriter.WriteLine();
+            }
+            return this;
+        }
+
+        protected EntityClassWriter WriteLine(string line)
+        {
+            codeWriter.WriteLine(line);
+            return this;
         }
 
         protected override string OutputTypeName => context.GetTypeName(record, GeneratedType.Entity);
 
         protected override string Namespace => schema.Configuration.CSharpNamespace;
 
+        protected override string? Implements => "IValidatableObject";
+
         protected override void WriteFields()
         {
+            WriteLines(
+                $"const string MinLengthErrMsg = " + "\"Minimum Length Violation\";",
+                $"const string MaxLengthErrMsg = " + "\"Maximum Length Violation\";",
+                $"const string RequiredValErrMsg = " + "\"Required value not set\";",
+                $"const string RegexErrMsg = " + "\"Value is not in expected pattern\";",
+                ""
+            );
+
+            WriteValidationConstants();
+            WriteLine();
 
             foreach (var field in record.fields)
             {
                 field.Accept(this);
             }
+        }
 
+        protected override void WriteMethods()
+        {
+            WriteLine();
+            WriteValidateMethod();
         }
 
         public void VisitField(Field field)
@@ -46,25 +97,25 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             if (field.IsKey)
             {
-                codeWriter.WriteLine($"[Key]");
+                WriteLine($"[Key]");
             }
 
             if (field.Required)
             {
-                codeWriter.WriteLine($"[Required]");
+                WriteLine($"[Required]");
             }
 
             if (field.CheckOnUpdate)
             {
-                codeWriter.WriteLine($"[ConcurrencyCheck]");
+                WriteLine($"[ConcurrencyCheck]");
             }
         }
 
         private void WriteField(Field field, string clrType)
         {
             WriteFieldAnnotations(field);
-            codeWriter.WriteLine($"public {clrType} {field.Name} {{get; set;}}");
-            codeWriter.WriteLine();
+            WriteLine($"public {clrType} {field.Name} {{get; set;}}");
+            WriteLine();
         }
 
         void WriteClrField(Field field)
@@ -129,7 +180,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     codeWriter
                         .WriteLine($"public {fkClrType} {field.Name}{fkField.Name} {{ get; set; }}");
                 }
-                codeWriter.WriteLine($"public {refTypeName} {field.Name} {{ get; set; }}")
+                WriteLine($"public {refTypeName} {field.Name} {{ get; set; }}")
                     .WriteLine();
             }
             else if (refEntity is EnumEntity refEnum)
@@ -145,6 +196,97 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         public void VisitListField(ListField listField)
         {
             WriteField(listField, context.MapToClrTypeName(listField.FieldType));
+        }
+
+        public void WriteValidateMethod()
+        {
+            WriteLines(
+                "public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)",
+                "{"
+            ).Indent();
+
+            WriteLine("var result = new List<ValidationResult>();");
+
+            foreach (var field in record.fields)
+            {
+                if (field is StringField strf)
+                {
+                    WriteStringFieldValidation(strf);
+                }
+            }
+
+            WriteLine("return result;");
+            UnIndent().WriteLine("}");
+        }
+
+        private void WriteValidationConstants()
+        {
+            foreach (var field in record.fields)
+            {
+                if (field is StringField strf)
+                {
+                    if (strf.MinLength.HasValue)
+                    {
+                        WriteLine($"const int {strf.Name}{nameof(strf.MinLength)} = {strf.MinLength};");
+                    }
+                    if (strf.MaxLength.HasValue)
+                    {
+                        WriteLine($"const int {strf.Name}{nameof(strf.MaxLength)} = {strf.MaxLength};");
+                    }
+                    if (!string.IsNullOrWhiteSpace(strf.RegexPattern)) {
+                        var regex = "\"" + strf.RegexPattern + "\"";
+                        WriteLine($"static readonly Regex {strf.Name}Regex = new Regex({regex});");
+                    }
+                }
+            }
+        }
+
+        private void WriteStringFieldValidation(StringField strf)
+        {
+            if (strf.Required)
+            {
+                var test = $"null == {strf.Name}";
+                using (IfStat(test))
+                {
+                    WriteLines(
+                        $"result.Add(new ValidationResult(RequiredValErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                    );
+                }
+            }
+
+            if (strf.MinLength.HasValue)
+            {
+                var test = $"null != {strf.Name} && {strf.Name}.Length < {strf.Name}{nameof(strf.MinLength)}";
+                using (IfStat(test))
+                {
+                    WriteLines(
+                        $"result.Add(new ValidationResult(MinLengthErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                    );
+                }
+            }
+
+            if (strf.MaxLength.HasValue)
+            {
+
+                var test = $"null != {strf.Name} && {strf.Name}.Length > {strf.Name}{nameof(strf.MaxLength)}";
+                using (IfStat(test))
+                {
+                    WriteLines(
+                        $"result.Add(new ValidationResult(MaxLengthErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                    );
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(strf.RegexPattern))
+            {
+                var test = $"!{strf.Name}Regex.IsMatch({strf.Name})";
+                using (IfStat(test))
+                {
+                    WriteLines(
+                        $"result.Add(new ValidationResult(RegexErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                    );
+                }
+            }
         }
     }
 }

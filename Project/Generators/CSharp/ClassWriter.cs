@@ -100,5 +100,42 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             codeWriter.Flush().Dispose();
         }
+
+        protected class ScopeHelper : IDisposable
+        {
+            private CodeWriter cw;
+            private IEnumerable<string> closing;
+
+            public ScopeHelper(CodeWriter cw, IEnumerable<string> opening, IEnumerable<string> closing)
+            {
+                this.cw = cw;
+                this.closing = closing;
+                foreach (var line in opening)
+                {
+                    this.cw.WriteLine(line);
+                }
+                this.cw.Indent();
+            }
+
+            public void Dispose()
+            {
+                this.cw.UnIndent();
+                foreach (var line in closing)
+                {
+                    this.cw.WriteLine(line);
+                }
+            }
+        }
+
+        protected IDisposable IfStat(string condition)
+        {
+            var scope = new ScopeHelper(
+                codeWriter,
+                    new string[] { $"if ({condition})", "{" },
+                 new string[] { "}" }
+            );
+
+            return scope;
+        }
     }
 }

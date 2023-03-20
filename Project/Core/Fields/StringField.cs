@@ -14,8 +14,8 @@ namespace Sharara.EntityCodeGen.Core.Fields
     class StringField : Field
     {
         public const string XmlTypeName = "str";
-        public long MinLength { get; set; }
-        public long MaxLength { get; set; } = long.MaxValue;
+        public int? MinLength { get; set; }
+        public int? MaxLength { get; set; }
         public string? RegexPattern { get; set; }
         public Transform Transforms { get; set; } = Transform.Trim;
         public StringField(string name)
