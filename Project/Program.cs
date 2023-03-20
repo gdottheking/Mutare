@@ -8,12 +8,12 @@ namespace Sharara.EntityCodeGen
 {
     public partial class Program
     {
-        private const string OutputFolder = "../Sharara.Services.Kumusha/Generated";
+        private const string OutputFolder = "../Example/Generated";
 
         static void Main()
         {
             Console.WriteLine("Loading schema");
-            var schema = (new SchemaLoader()).ReadDocument("kumusha.xml");
+            var schema = (new SchemaLoader()).ReadDocument("example.xml");
             var service = new Service(schema);
 
             CleanOutputFolder();
