@@ -1,10 +1,11 @@
 using Sharara.EntityCodeGen.Core;
+using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
     internal class CodeGeneratorContext
     {
-
         public CodeGeneratorContext(string outputFolder)
         {
             OutputFolder = outputFolder;
@@ -61,13 +62,13 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
             return fieldType switch
             {
-                FieldType.DateTime => Coerce("DateTime"),
-                FieldType.Float64 => Coerce("double"),
-                FieldType.Int64 => Coerce("long"),
-                FieldType.Int32 => Coerce("int"),
-                FieldType.String => "string",
+                FieldType.Void x => x.ClrType,
+                FieldType.DateTime x => Coerce(x.ClrType),
+                FieldType.Float64 x => Coerce(x.ClrType),
+                FieldType.Int64 x => Coerce(x.ClrType),
+                FieldType.Int32 x => Coerce(x.ClrType),
+                FieldType.String x => Coerce(x.ClrType),
                 FieldType.List l => $"IEnumerable<{MapToClrTypeName(l.ItemType)}>",
-                FieldType.Void => "void",
                 FieldType.EntityRef entyRef => GetTypeName(entyRef.Entity, GeneratedType.Entity),
                 FieldType.EntityNameRef nameRef => GetTypeName(nameRef.ResolvedEntity!, GeneratedType.Entity),
                 _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")

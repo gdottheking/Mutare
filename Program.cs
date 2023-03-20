@@ -1,4 +1,5 @@
 using Sharara.EntityCodeGen.Core;
+using Sharara.EntityCodeGen.Core.Rpc;
 using Sharara.EntityCodeGen.Generators;
 using Sharara.EntityCodeGen.Generators.CSharp;
 using Sharara.EntityCodeGen.Generators.Protobuf;

@@ -1,4 +1,4 @@
-namespace Sharara.EntityCodeGen.Core
+namespace Sharara.EntityCodeGen.Core.Fields
 {
     class ListField : Field
     {

@@ -1,3 +1,5 @@
+using Sharara.EntityCodeGen.Core.Fields;
+
 namespace Sharara.EntityCodeGen.Core
 {
     class RecordEntity : Entity

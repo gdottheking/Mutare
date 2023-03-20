@@ -1,4 +1,7 @@
-namespace Sharara.EntityCodeGen.Core
+
+using Sharara.EntityCodeGen.Core.Fields;
+
+namespace Sharara.EntityCodeGen.Core.Rpc
 {
     record OperationInfo(Entity Entity,
                      OperationType OperationType,

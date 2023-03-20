@@ -1,4 +1,6 @@
 using Sharara.EntityCodeGen.Core;
+using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.Protobuf
 {
@@ -89,11 +91,11 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
         {
             return fieldType switch
             {
-                FieldType.DateTime => "string",
-                FieldType.Float64 => "double",
-                FieldType.Int64 => "int64",
-                FieldType.Int32 => "int32",
-                FieldType.String => "string",
+                FieldType.DateTime x => x.GrpcType,
+                FieldType.Float64 x => x.GrpcType,
+                FieldType.Int64 x => x.GrpcType,
+                FieldType.Int32 x => x.GrpcType,
+                FieldType.String x => x.GrpcType,
                 FieldType.EntityRef entRef => entRef.Entity.Name,
                 FieldType.EntityNameRef nameRef =>
                     nameRef.ResolvedEntity?.Name ??

@@ -1,4 +1,6 @@
-namespace Sharara.EntityCodeGen.Core
+using Sharara.EntityCodeGen.Core.Fields;
+
+namespace Sharara.EntityCodeGen.Core.Rpc
 {
     class Service
     {

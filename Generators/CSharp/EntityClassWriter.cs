@@ -1,4 +1,5 @@
 using Sharara.EntityCodeGen.Core;
+using Sharara.EntityCodeGen.Core.Fields;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
