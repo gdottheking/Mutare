@@ -1,4 +1,8 @@
-bin/**/*
-obj/**/*
-.vscode/**/*
-generated
+Project/bin/**/*
+Project/obj/**/*
+Project/.vscode/**/*
+
+Sharara.Services.Kumusha/Generated
+Sharara.Services.Kumusha/bin/**/*
+Sharara.Services.Kumusha/obj/**/*
+Sharara.Services.Kumusha/.vscode/**/*
