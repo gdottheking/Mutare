@@ -19,8 +19,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.context = context;
             this.Enum = enumEntity;
 
-            Imports.Add("using grpc = global::Grpc.Core;");
-            Imports.Add($"using proto = global::{Common.ProtocOutputNamespace};");
+            Imports.Add("using Grpc = global::Grpc.Core;");
+            Imports.Add($"using Proto = global::{Common.ProtocOutputNamespace};");
             Imports.Add("using System.ComponentModel.DataAnnotations;");
             Imports.Add("using System.Globalization;");
         }
@@ -44,16 +44,16 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void Write_ToMessage()
         {
             var enumName = context.GetTypeName(Enum, GeneratedType.Enum);
-            using (codeWriter.CurlyBracketScope($"public proto::{Enum.Name} Convert({enumName} value)"))
+            using (codeWriter.CurlyBracketScope($"public Proto::{Enum.Name} Convert({enumName} value)"))
             {
                 using (codeWriter.CurlyBracketScope("return value switch "))
                 {
                     for (int i = 0; i < Enum.Values.Count; i++)
                     {
                         EnumValue? val = Enum.Values[i];
-                        codeWriter.WriteLine($"{enumName}.{val.Name} => proto::{Enum.Name}.{val.Name},");
+                        codeWriter.WriteLine($"{enumName}.{val.Name} => Proto::{Enum.Name}.{val.Name},");
                     }
-                    codeWriter.WriteLine($"_ => (proto::{Enum.Name}) value");
+                    codeWriter.WriteLine($"_ => (Proto::{Enum.Name}) value");
                 }
                 codeWriter.WriteLine(";");
             }
@@ -63,14 +63,14 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             var enumName = context.GetTypeName(Enum, GeneratedType.Enum);
 
-            using (codeWriter.CurlyBracketScope($"public {enumName} Convert(proto::{Enum.Name} value)"))
+            using (codeWriter.CurlyBracketScope($"public {enumName} Convert(Proto::{Enum.Name} value)"))
             {
                 using (codeWriter.CurlyBracketScope("return value switch "))
                 {
                     for (int i = 0; i < Enum.Values.Count; i++)
                     {
                         EnumValue? val = Enum.Values[i];
-                        codeWriter.WriteLine($"proto::{Enum.Name}.{val.Name} => {enumName}.{val.Name},");
+                        codeWriter.WriteLine($"Proto::{Enum.Name}.{val.Name} => {enumName}.{val.Name},");
                     }
                     codeWriter.WriteLine($"_ => ({enumName}) value");
                 }

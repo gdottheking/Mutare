@@ -22,16 +22,22 @@
 
         <record name="Test" plural="Tests">
             <fields>
-                <ref name="RecordStatus" entity="RecordStatus" pb:id="8" />
-                <ref name="Business" entity="Business" pb:id="1" />
-                <list of="Address" name="Addresses" pb:id="2" />
-                <list of="str" name="Lines" pb:id="3" />
-                <list of="RecordStatus" name="ListOfRecordStatus" pb:id="7" />
-                <i32 name="Height" minValue="180" maxValue="200" pb:id="4" />
+                <i32 name="HeightInt32" minValue="180" maxValue="200" pb:id="1" />
+                <i64 name="HeightInt64" minValue="180" maxValue="200" pb:id="2" />
+                <f64 name="HeightFloat64" minValue="180" maxValue="200" pb:id="3" />
+
                 <str name="FourLetterWord" regex="([A-Za-z]){4}"
-                     minLength="4" maxLength="4" pb:id="5"
+                     minLength="4" maxLength="4" pb:id="4"
                      transform="toUpper,trim" />
-                <date name="Birthday" pb:id="6" />
+
+                <date name="Birthday" pb:id="5" />
+
+                <ref name="RecordStatus" entity="RecordStatus" pb:id="9" />
+                <ref name="Business" entity="Business" pb:id="10" />
+
+                <list of="str" name="ListOfStrings" pb:id="18" />
+                <list of="Address" name="ListOfAddresses" pb:id="19" />
+                <list of="RecordStatus" name="ListOfRecordStatus" pb:id="20" />
             </fields>
         </record>
 

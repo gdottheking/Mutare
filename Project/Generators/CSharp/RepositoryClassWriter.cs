@@ -92,7 +92,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             OpenMethod(proc);
 
-            string opReturnType = context.MapToClrTypeName(proc.ReturnType);
+            string opReturnType = context.MapToDotNetType(proc.ReturnType);
 
             codeWriter.WriteLines(
                 $"var num = dbContext.{proc.Record.Name}.LongCount();",
@@ -131,7 +131,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             var countArg = args[args.Length-1];
             OpenMethod(proc);
 
-            var retType = context.MapToClrTypeName(proc.ReturnType);
+            var retType = context.MapToDotNetType(proc.ReturnType);
 
             codeWriter.WriteLines(
                 $"{idxArg.Name} = Math.Max(0, {idxArg.Name});",

@@ -10,8 +10,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CodeGeneratorContext context)
             : base(service, codeWriter, context)
         {
-            Imports.Add("using grpc = global::Grpc.Core;");
-            Imports.Add($"using proto = global::{Common.ProtocOutputNamespace};");
+            Imports.Add("using Grpc = global::Grpc.Core;");
+            Imports.Add($"using Proto = global::{Common.ProtocOutputNamespace};");
             Imports.Add("using System.ComponentModel.DataAnnotations;");
         }
 
@@ -21,7 +21,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 
-        protected override string? Implements => $"proto::{Common.GrpcServiceName}.{Common.GrpcServiceName}Base";
+        protected override string? Implements => $"Proto::{Common.GrpcServiceName}.{Common.GrpcServiceName}Base";
 
         protected override void WriteConstructor()
         {
@@ -74,11 +74,11 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void OpenMethod(IProcedure proc, ServiceProcClr outputNames)
         {
             string opName = proc.Name;
-            string returnType = $"Task<proto::{outputNames.ResponseTypeName}>";
+            string returnType = $"Task<Proto::{outputNames.ResponseTypeName}>";
             codeWriter.WriteLines(
                     $"public override async {returnType} {opName}(",
-                    $"      proto::{outputNames.RequestTypeName} request,",
-                    "      grpc::ServerCallContext context)"
+                    $"      Proto::{outputNames.RequestTypeName} request,",
+                    "      Grpc::ServerCallContext context)"
                 )
                 .WriteLine("{")
                 .Indent();
@@ -97,7 +97,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
             codeWriter.WriteLines(
                 $"var count = await this.Repository.{outputNames.MethodName}();",
-                $"var response = new proto::{outputNames.ResponseTypeName} {{ Payload = count }};",
+                $"var response = new Proto::{outputNames.ResponseTypeName} {{ Payload = count }};",
                 "return response;"
             );
 

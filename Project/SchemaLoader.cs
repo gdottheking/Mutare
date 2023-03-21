@@ -371,7 +371,7 @@ namespace Sharara.EntityCodeGen
         void ReadCommonFieldAttributes(Field field, XmlElement el)
         {
             field.ProtoId = MustGetInt(el, "pb:id");
-            field.Required = GetBool(el, "required");
+            field.IsRequired = GetBool(el, "required");
             field.IsKey = GetBool(el, "key");
             field.CheckOnUpdate = GetBool(el, "checkOnUpdate");
         }

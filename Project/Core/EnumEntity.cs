@@ -48,7 +48,7 @@ namespace Sharara.EntityCodeGen.Core
             if (backingRecord == null)
             {
                 backingRecord = new RecordEntity(Name, PluralName);
-                backingRecord.Fields.Add(new Int32Field("Id") { IsKey = true, Required = true });
+                backingRecord.Fields.Add(new Int32Field("Id") { IsKey = true, IsRequired = true });
                 backingRecord.Fields.Add(new StringField("Display") { MinLength = 0, MaxLength = 512 });
                 backingRecord.Fields.Add(new StringField("Description") { MinLength = 0, MaxLength = 512 });
             }

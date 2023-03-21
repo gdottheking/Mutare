@@ -20,8 +20,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.context = context;
             this.Record = record;
 
-            Imports.Add("using grpc = global::Grpc.Core;");
-            Imports.Add($"using proto = global::{Common.ProtocOutputNamespace};");
+            Imports.Add("using Grpc = global::Grpc.Core;");
+            Imports.Add($"using Proto = global::{Common.ProtocOutputNamespace};");
             Imports.Add("using System.ComponentModel.DataAnnotations;");
             Imports.Add("using System.Globalization;");
         }
@@ -53,7 +53,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             base.WriteFields();
             codeWriter.WriteLine($"const string DateFormatString = \"{FormatString}\";");
 
-            List<string> converterClassNames = new List<string>();
+            HashSet<string> converterClassNames = new HashSet<string>();
             foreach (var field in Record.Fields)
             {
                 if (field.FieldType is FieldType.Entity)
@@ -76,23 +76,15 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             codeWriter.WriteLine();
         }
 
-        bool IsSimpleAssignable(FieldType fieldType)
-        {
-            return fieldType is FieldType.String ||
-                        fieldType is FieldType.Int64 ||
-                        fieldType is FieldType.Int32 ||
-                        fieldType is FieldType.Float64;
-        }
-
         void Write_ToMessage()
         {
             var recClassName = context.GetTypeName(Record, GeneratedType.Entity);
-            using (codeWriter.CurlyBracketScope($"public proto::{Record.Name} Convert({recClassName} entity)"))
+            using (codeWriter.CurlyBracketScope($"public Proto::{Record.Name} Convert({recClassName} entity)"))
             {
                 codeWriter.WriteLines(
                     $"ArgumentNullException.ThrowIfNull(entity);",
                     "",
-                    $"proto::{Record.Name} message = new();"
+                    $"Proto::{Record.Name} message = new();"
                 );
 
                 foreach (var field in Record.Fields)
@@ -100,7 +92,21 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     string lhs = $"message.{field.Name}";
                     string rhs = $"entity.{field.Name}";
 
-                    if (IsSimpleAssignable(field.FieldType))
+                    if (field.FieldType.IsNumericPrimitive())
+                    {
+                        if (field.IsMandatory())
+                        {
+                            codeWriter.WriteLine($"{lhs} = {rhs};");
+                        }
+                        else
+                        {
+                            using (codeWriter.CurlyBracketScope($"if ({rhs}.HasValue)"))
+                            {
+                                codeWriter.WriteLine($"{lhs} = {rhs}.Value;");
+                            }
+                        }
+                    }
+                    else if (field.FieldType.IsSimpleAssignable())
                     {
                         using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
                         {
@@ -109,9 +115,17 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     }
                     else if (field is DateTimeField)
                     {
-                        using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
+
+                        if (field.IsMandatory())
                         {
                             codeWriter.WriteLine($"{lhs} = {rhs}.ToString(DateFormatString);");
+                        }
+                        else
+                        {
+                            using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
+                            {
+                                codeWriter.WriteLine($"{lhs} = {rhs}.Value.ToString(DateFormatString);");
+                            }
                         }
                     }
                     else if (field is ReferenceField r)
@@ -123,9 +137,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     }
                     else if (field is ListField lf)
                     {
-                        if (IsSimpleAssignable(lf.FieldType.ItemType))
+                        if (lf.FieldType.ItemType.IsSimpleAssignable())
                         {
-                            string itemClrType = context.MapToClrTypeName(lf.FieldType.ItemType);
+                            string itemClrType = context.MapToDotNetType(lf.FieldType.ItemType);
                             codeWriter.WriteLine($"{lhs}.AddRange({rhs});");
                         }
                         else if (lf.FieldType.ItemType is FieldType.Entity ftEnt)
@@ -147,7 +161,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void Write_ToEntity()
         {
             var recClassName = context.GetTypeName(Record, GeneratedType.Entity);
-            using (codeWriter.CurlyBracketScope($"public {recClassName} Convert(proto::{Record.Name} message)"))
+            using (codeWriter.CurlyBracketScope($"public {recClassName} Convert(Proto::{Record.Name} message)"))
             {
                 codeWriter.WriteLine($"{recClassName} entity = new();");
                 foreach (var field in Record.Fields)
@@ -155,10 +169,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     string lhs = $"entity.{field.Name}";
                     string rhs = $"message.{field.Name}";
 
-                    if (field is StringField ||
-                        field is Int64Field ||
-                        field is Int32Field ||
-                        field is Float64Field)
+                    if (field.FieldType.IsNumericPrimitive())
+                    {
+                        // Grpc Ints and Floats are never nullable "?"
+                        codeWriter.WriteLine($"{lhs} = {rhs};");
+                    }
+                    else if (field.FieldType.IsSimpleAssignable())
                     {
                         using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
                         {
@@ -179,9 +195,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     }
                     else if (field is ListField lf)
                     {
-                        if (IsSimpleAssignable(lf.FieldType.ItemType))
+                        if (lf.FieldType.ItemType.IsSimpleAssignable())
                         {
-                            string clrType = context.MapToClrTypeName(lf.FieldType.ItemType);
+                            string clrType = context.MapToDotNetType(lf.FieldType.ItemType);
                             codeWriter.WriteLine($"{lhs} = new List<{clrType}>({rhs});");
                         }
                         else

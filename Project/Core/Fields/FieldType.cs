@@ -38,7 +38,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
         {
             public static readonly Float64 Instance = new Float64();
             public string ClrType { get; } = "double";
-            public override string GrpcType { get; } = "float64";
+            public override string GrpcType { get; } = "double";
         }
 
         public class DateTime : FieldType

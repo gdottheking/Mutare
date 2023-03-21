@@ -56,7 +56,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             return new CodeWriter(writer);
         }
 
-        public string MapToClrTypeName(FieldType fieldType, bool forceNullable = false)
+        public string MapToDotNetType(FieldType fieldType, bool forceNullable = false)
         {
             Func<string, string> Coerce = (clrType) => forceNullable ? clrType += "?" : clrType;
 
@@ -68,16 +68,31 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 FieldType.Int64 x => Coerce(x.ClrType),
                 FieldType.Int32 x => Coerce(x.ClrType),
                 FieldType.String x => Coerce(x.ClrType),
-                FieldType.List l => $"IEnumerable<{MapToClrTypeName(l.ItemType)}>",
+                FieldType.List l => $"IEnumerable<{MapToDotNetType(l.ItemType)}>",
                 FieldType.Entity x => GetTypeName(x.GetEntity(), GeneratedType.Entity),
                 _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
             };
         }
 
+        public string MapToDotNetType(Field field)
+        {
+            // When a property is not mandatory,
+            // and of type int, long, float, double, DateTime
+            // We convert the field to its Nullable<?> version
+            var clrType = MapToDotNetType(field.FieldType);
+            if ((field.FieldType.IsNumericPrimitive() ||
+                 field.FieldType is FieldType.DateTime) &&
+                 !field.IsMandatory())
+            {
+                clrType += "?";
+            }
+            return clrType;
+        }
+
         public string ClrDeclString(IProcedure proc)
         {
             string @params = string.Join(", ", proc.Arguments.Select(ClrDeclString));
-            string returnType = MapToClrTypeName(proc.ReturnType);
+            string returnType = MapToDotNetType(proc.ReturnType);
             returnType = returnType.Equals("void") ? "Task" : $"Task<{returnType}>";
 
             // HACK: ClrDeclString isn't only called by service Generator
@@ -89,7 +104,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         public string ClrDeclString(Argument arg)
         {
-            string typeName = MapToClrTypeName(arg.Type);
+            string typeName = MapToDotNetType(arg.Type);
             return $"{typeName} {arg.Name}";
         }
 

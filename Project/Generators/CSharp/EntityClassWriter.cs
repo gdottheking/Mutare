@@ -8,6 +8,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         private Schema schema;
         private CodeGeneratorContext context;
         private readonly RecordEntity record;
+        private readonly ValidationWriter validationWriter;
 
         public EntityClassWriter(RecordEntity record,
             Schema definition,
@@ -18,6 +19,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.record = record;
             this.schema = definition;
             this.context = context;
+            this.validationWriter = new ValidationWriter(this);
 
             this.Imports.Add("using System.ComponentModel.DataAnnotations;");
             this.Imports.Add("using System.ComponentModel.DataAnnotations.Schema;");
@@ -73,7 +75,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 ""
             );
 
-            WriteValidationConstants();
+            validationWriter.WriteFields();
             WriteLine();
 
             foreach (var field in record.Fields.OrderBy(f => f.Name))
@@ -85,7 +87,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override void WriteMethods()
         {
-            WriteValidateMethod();
+            validationWriter.WriteMethods();
         }
 
         public void VisitField(Field field)
@@ -100,7 +102,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 WriteLine($"[Key]");
             }
 
-            if (field.Required)
+            if (field.IsRequired)
             {
                 WriteLine($"[Required]");
             }
@@ -120,7 +122,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void WriteClrField(Field field)
         {
-            WriteClassProperty(field, context.MapToClrTypeName(field.FieldType));
+            WriteClassProperty(field, context.MapToDotNetType(field));
         }
 
         public void VisitStringField(StringField field)
@@ -162,7 +164,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 {
                     if (shadow.Target.Owner == targetRec)
                     {
-                        string targetClrType = context.MapToClrTypeName(shadow.Target.Field.FieldType, true);
+                        string targetClrType = context.MapToDotNetType(shadow.Target.Field.FieldType, true);
                         WriteLine($"public {targetClrType} {shadow.Name} {{get; set;}}");
                     }
 
@@ -174,11 +176,6 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             else if (refEntity.EntityType == EntityType.Enum)
             {
                 var refEnum = (EnumEntity)refEntity;
-                // string refTypeName = context.GetTypeName(refEntity, GeneratedType.Entity);
-                // WriteFieldAnnotations(field);
-                // WriteLine($"public {} {field.Name}Id {{ get; set; }}");
-                // WriteLine($"public {refTypeName} {field.Name} {{ get; set; }}");
-
                 string enumName = context.GetTypeName(refEnum, GeneratedType.Enum);
                 WriteClassProperty(field, enumName);
             }
@@ -186,98 +183,191 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         public void VisitListField(ListField listField)
         {
-            WriteClassProperty(listField, context.MapToClrTypeName(listField.FieldType));
+            WriteClassProperty(listField, context.MapToDotNetType(listField.FieldType));
         }
 
-        public void WriteValidateMethod()
+        class ValidationWriter : IFieldVisitor
         {
-            WriteLines(
-                "public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)",
-                "{"
-            ).Indent();
+            private readonly EntityClassWriter parent;
 
-            WriteLine("var result = new List<ValidationResult>();");
-
-            foreach (var field in record.Fields)
+            public ValidationWriter(EntityClassWriter parent)
             {
-                if (field is StringField strf)
-                {
-                    WriteStringFieldValidation(strf);
-                }
+                this.parent = parent;
             }
 
-            WriteLine("return result;");
-            UnIndent().WriteLine("}");
-        }
-
-        private void WriteValidationConstants()
-        {
-            foreach (var field in record.Fields)
+            public void WriteMethods()
             {
-                if (field is StringField strf)
+                foreach (var field in parent.record.Fields)
                 {
-                    if (strf.MinLength.HasValue)
+                    field.Accept(this);
+                }
+
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + "Validate(ValidationContext validationContext)";
+
+                using (parent.codeWriter.CurlyBracketScope(methodDecl))
+                {
+                    parent.WriteLine("var result = new List<ValidationResult>();");
+
+                    foreach (var field in parent.record.Fields)
                     {
-                        WriteLine($"const int {strf.Name}{nameof(strf.MinLength)} = {strf.MinLength};");
+                        parent.WriteLine($"result.AddRange(Validate{field.Name}(validationContext));");
                     }
-                    if (strf.MaxLength.HasValue)
+
+                    parent.WriteLine("return result;");
+                }
+            }
+
+            public void WriteFields()
+            {
+                foreach (var field in parent.record.Fields)
+                {
+                    if (field is StringField strf)
                     {
-                        WriteLine($"const int {strf.Name}{nameof(strf.MaxLength)} = {strf.MaxLength};");
+                        if (strf.MinLength.HasValue)
+                        {
+                            parent.WriteLine($"const int {strf.Name}{nameof(strf.MinLength)} = {strf.MinLength};");
+                        }
+                        if (strf.MaxLength.HasValue)
+                        {
+                            parent.WriteLine($"const int {strf.Name}{nameof(strf.MaxLength)} = {strf.MaxLength};");
+                        }
+                        if (!string.IsNullOrWhiteSpace(strf.RegexPattern))
+                        {
+                            var regex = "\"" + strf.RegexPattern + "\"";
+                            parent.WriteLine($"static readonly Regex {strf.Name}Regex = new Regex({regex});");
+                        }
                     }
-                    if (!string.IsNullOrWhiteSpace(strf.RegexPattern))
+                }
+            }
+
+            public void VisitDateTimeField(DateTimeField strf)
+            {
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + $"Validate{strf.Name}(ValidationContext validationContext)";
+
+                using var _ = parent.codeWriter.CurlyBracketScope(methodDecl);
+                parent.WriteLine("var result = new List<ValidationResult>();");
+                // TODO: Validation here
+                parent.WriteLine("return result;");
+            }
+
+            public void VisitStringField(StringField strf)
+            {
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + $"Validate{strf.Name}(ValidationContext validationContext)";
+
+                using var _ = parent.codeWriter.CurlyBracketScope(methodDecl);
+
+                parent.WriteLine("var result = new List<ValidationResult>();");
+
+                if (strf.IsRequired)
+                {
+                    var test = $"null == {strf.Name}";
+                    using (parent.IfStat(test))
                     {
-                        var regex = "\"" + strf.RegexPattern + "\"";
-                        WriteLine($"static readonly Regex {strf.Name}Regex = new Regex({regex});");
+                        parent.WriteLines(
+                            $"result.Add(new ValidationResult(RequiredValErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                        );
                     }
                 }
-            }
-        }
 
-        private void WriteStringFieldValidation(StringField strf)
-        {
-            if (strf.Required)
-            {
-                var test = $"null == {strf.Name}";
-                using (IfStat(test))
+                if (strf.MinLength.HasValue)
                 {
-                    WriteLines(
-                        $"result.Add(new ValidationResult(RequiredValErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
-                    );
+                    var test = $"null != {strf.Name} && {strf.Name}.Length < {strf.Name}{nameof(strf.MinLength)}";
+                    using (parent.IfStat(test))
+                    {
+                        parent.WriteLines(
+                            $"result.Add(new ValidationResult(MinLengthErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                        );
+                    }
                 }
+
+                if (strf.MaxLength.HasValue)
+                {
+
+                    var test = $"null != {strf.Name} && {strf.Name}.Length > {strf.Name}{nameof(strf.MaxLength)}";
+                    using (parent.IfStat(test))
+                    {
+                        parent.WriteLines(
+                            $"result.Add(new ValidationResult(MaxLengthErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                        );
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(strf.RegexPattern))
+                {
+                    var test = $"!{strf.Name}Regex.IsMatch({strf.Name})";
+                    using (parent.IfStat(test))
+                    {
+                        parent.WriteLines(
+                            $"result.Add(new ValidationResult(RegexErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
+                        );
+                    }
+                }
+
+                parent.WriteLine("return result;");
+
             }
 
-            if (strf.MinLength.HasValue)
+            public void VisitField(Field field)
             {
-                var test = $"null != {strf.Name} && {strf.Name}.Length < {strf.Name}{nameof(strf.MinLength)}";
-                using (IfStat(test))
-                {
-                    WriteLines(
-                        $"result.Add(new ValidationResult(MinLengthErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
-                    );
-                }
+                throw new NotImplementedException();
             }
 
-            if (strf.MaxLength.HasValue)
+            public void VisitInt32Field(Int32Field field)
             {
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + $"Validate{field.Name}(ValidationContext validationContext)";
 
-                var test = $"null != {strf.Name} && {strf.Name}.Length > {strf.Name}{nameof(strf.MaxLength)}";
-                using (IfStat(test))
-                {
-                    WriteLines(
-                        $"result.Add(new ValidationResult(MaxLengthErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
-                    );
-                }
+                using var _ = parent.codeWriter.CurlyBracketScope(methodDecl);
+                parent.WriteLine("var result = new List<ValidationResult>();");
+                // TODO: Validation here
+                parent.WriteLine("return result;");
             }
 
-            if (!string.IsNullOrWhiteSpace(strf.RegexPattern))
+            public void VisitInt64Field(Int64Field field)
             {
-                var test = $"!{strf.Name}Regex.IsMatch({strf.Name})";
-                using (IfStat(test))
-                {
-                    WriteLines(
-                        $"result.Add(new ValidationResult(RegexErrMsg, new string[]{{ nameof({strf.Name}) }} ));"
-                    );
-                }
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + $"Validate{field.Name}(ValidationContext validationContext)";
+
+                using var _ = parent.codeWriter.CurlyBracketScope(methodDecl);
+                parent.WriteLine("var result = new List<ValidationResult>();");
+                // TODO: Validation here
+                parent.WriteLine("return result;");
+            }
+
+            public void VisitFloat64Field(Float64Field field)
+            {
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + $"Validate{field.Name}(ValidationContext validationContext)";
+
+                using var _ = parent.codeWriter.CurlyBracketScope(methodDecl);
+                parent.WriteLine("var result = new List<ValidationResult>();");
+                // TODO: Validation here
+                parent.WriteLine("return result;");
+            }
+
+            public void VisitReferenceField(ReferenceField field)
+            {
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + $"Validate{field.Name}(ValidationContext validationContext)";
+
+                using var _ = parent.codeWriter.CurlyBracketScope(methodDecl);
+                parent.WriteLine("var result = new List<ValidationResult>();");
+                // TODO: Validation here
+                parent.WriteLine("return result;");
+            }
+
+            public void VisitListField(ListField field)
+            {
+                var methodDecl = "public IEnumerable<ValidationResult> "
+                    + $"Validate{field.Name}(ValidationContext validationContext)";
+
+                using var _ = parent.codeWriter.CurlyBracketScope(methodDecl);
+                parent.WriteLine("var result = new List<ValidationResult>();");
+                // TODO: Validation here
+                parent.WriteLine("return result;");
             }
         }
     }
