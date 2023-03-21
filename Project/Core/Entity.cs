@@ -1,16 +1,23 @@
 namespace Sharara.EntityCodeGen.Core
 {
+    enum EntityType
+    {
+        None,
+        Record,
+        Enum
+    }
+
     abstract class Entity
     {
-
-
         public string Name { get; private set; }
         public string PluralName { get; private set; }
+        public EntityType EntityType { get; private set; }
 
-        protected Entity(string name, string pluralName)
+        protected Entity(string name, string pluralName, EntityType entityType)
         {
             this.Name = name;
             this.PluralName = pluralName;
+            this.EntityType = entityType;
         }
 
         public virtual void Accept(IEntityVisitor visitor)

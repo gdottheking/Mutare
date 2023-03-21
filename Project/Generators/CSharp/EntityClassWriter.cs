@@ -76,15 +76,15 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             WriteValidationConstants();
             WriteLine();
 
-            foreach (var field in record.Fields)
+            foreach (var field in record.Fields.OrderBy(f => f.Name))
             {
                 field.Accept(this);
+                WriteLine();
             }
         }
 
         protected override void WriteMethods()
         {
-            WriteLine();
             WriteValidateMethod();
         }
 
@@ -111,16 +111,16 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             }
         }
 
-        private void WriteField(Field field, string clrType)
+        private void WriteClassProperty(Field field, string clrType, string? overrideName = null)
         {
+            string propName = !string.IsNullOrWhiteSpace(overrideName) ? overrideName : field.Name;
             WriteFieldAnnotations(field);
-            WriteLine($"public {clrType} {field.Name} {{get; set;}}");
-            WriteLine();
+            WriteLine($"public {clrType} {propName} {{get; set;}}");
         }
 
         void WriteClrField(Field field)
         {
-            WriteField(field, context.MapToClrTypeName(field.FieldType));
+            WriteClassProperty(field, context.MapToClrTypeName(field.FieldType));
         }
 
         public void VisitStringField(StringField field)
@@ -146,39 +146,47 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         public void VisitDateTimeField(DateTimeField field)
         {
             WriteClrField(field);
-
         }
 
         public void VisitReferenceField(ReferenceField field)
         {
             Entity refEntity = context.GetEntity(field.FieldType);
+            Console.WriteLine($"Writing {field.Name}");
 
-            if (refEntity is RecordEntity refRecord)
+            if (refEntity.EntityType == EntityType.Record)
             {
-                string refTypeName = context.GetTypeName(refEntity, GeneratedType.Entity);
-                foreach (var fkField in refRecord.Keys())
+                var targetRec = (RecordEntity)refEntity;
+                // Write shadow fields
+                var shadowFields = this.record.ShadowFields();
+                foreach (var shadow in shadowFields)
                 {
-                    string fkClrType = context.MapToClrTypeName(fkField.FieldType, true);
-                    WriteFieldAnnotations(field);
-                    codeWriter
-                        .WriteLine($"public {fkClrType} {field.Name}{fkField.Name} {{ get; set; }}");
+                    if (shadow.Target.Owner == targetRec)
+                    {
+                        string targetClrType = context.MapToClrTypeName(shadow.Target.Field.FieldType, true);
+                        WriteLine($"public {targetClrType} {shadow.Name} {{get; set;}}");
+                    }
+
+                    // Write
+                    string refTypeName = context.GetTypeName(refEntity, GeneratedType.Entity);
+                    WriteClassProperty(field, refTypeName);
                 }
-                WriteLine($"public {refTypeName} {field.Name} {{ get; set; }}")
-                    .WriteLine();
             }
-            else if (refEntity is EnumEntity refEnum)
+            else if (refEntity.EntityType == EntityType.Enum)
             {
-                string refTypeName = context.GetTypeName(refEntity, GeneratedType.Entity);
-                WriteFieldAnnotations(field);
-                codeWriter
-                    .WriteLine($"public long {field.Name}Id {{ get; set; }}")
-                    .WriteLine($"public {refTypeName} {field.Name} {{ get; set; }}");
+                var refEnum = (EnumEntity)refEntity;
+                // string refTypeName = context.GetTypeName(refEntity, GeneratedType.Entity);
+                // WriteFieldAnnotations(field);
+                // WriteLine($"public {} {field.Name}Id {{ get; set; }}");
+                // WriteLine($"public {refTypeName} {field.Name} {{ get; set; }}");
+
+                string enumName = context.GetTypeName(refEnum, GeneratedType.Enum);
+                WriteClassProperty(field, enumName);
             }
         }
 
         public void VisitListField(ListField listField)
         {
-            WriteField(listField, context.MapToClrTypeName(listField.FieldType));
+            WriteClassProperty(listField, context.MapToClrTypeName(listField.FieldType));
         }
 
         public void WriteValidateMethod()
@@ -216,7 +224,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     {
                         WriteLine($"const int {strf.Name}{nameof(strf.MaxLength)} = {strf.MaxLength};");
                     }
-                    if (!string.IsNullOrWhiteSpace(strf.RegexPattern)) {
+                    if (!string.IsNullOrWhiteSpace(strf.RegexPattern))
+                    {
                         var regex = "\"" + strf.RegexPattern + "\"";
                         WriteLine($"static readonly Regex {strf.Name}Regex = new Regex({regex});");
                     }

@@ -7,7 +7,7 @@ namespace Sharara.EntityCodeGen.Core
         public const string XmlTypeName = "record";
 
         public RecordEntity(string name, string pluralName)
-            : base(name, pluralName)
+            : base(name, pluralName, EntityType.Record)
         {
         }
 
@@ -18,11 +18,35 @@ namespace Sharara.EntityCodeGen.Core
             get => Fields.Where(f => 0 == string.Compare(name, f.Name, true)).FirstOrDefault();
         }
 
-        public IEnumerable<Field> Keys() => Fields.Where(f => f.IsKey);
+        public IEnumerable<Field> GetKeyFields() => Fields.Where(f => f.IsKey);
 
         public override void Accept(IEntityVisitor visitor)
         {
             visitor.VisitRecord(this);
+        }
+
+        public ICollection<ShadowField> ShadowFields()
+        {
+            // Get all reference fields which point to a Record
+            var relationFields = Fields.Where(f => f is ReferenceField rf &&
+                    rf.FieldType.GetEntity().EntityType == EntityType.Record)
+                    .Cast<ReferenceField>();
+
+            List<ShadowField> shadowFields = new List<ShadowField>();
+
+            // Create a shadow field for each Key on the relation
+            foreach (var recField in relationFields)
+            {
+                var otherRecord = (RecordEntity)recField.FieldType.GetEntity();
+                foreach (var pkField in otherRecord.GetKeyFields())
+                {
+                    var y = new FieldOwnership(otherRecord, pkField);
+                    var shadow = new ShadowField(recField, y);
+                    shadowFields.Add(shadow);
+                }
+            }
+
+            return shadowFields;
         }
 
         public override void Validate()
@@ -57,5 +81,19 @@ namespace Sharara.EntityCodeGen.Core
                 throw new Exception($"Entity {Name}. Field has duplicate proto id: {e.Message}");
             }
         }
+    }
+
+    record FieldOwnership(RecordEntity Owner, Field Field)
+    {
+        public override string ToString()
+        {
+            return $"{Owner.Name}.{Field.Name}";
+        }
+    }
+
+    record ShadowField(Field Field, FieldOwnership Target)
+    {
+        public string Name => Field.Name + Target.Field.Name;
+        public override string ToString() => Name;
     }
 }

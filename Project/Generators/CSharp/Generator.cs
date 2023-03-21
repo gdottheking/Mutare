@@ -32,6 +32,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 else if (entity is EnumEntity e)
                 {
                     GenerateEnum(e);
+                    GenerateConverter(e);
                     GenerateEntity(e.BackingRecord__Hack());
                 }
             }
@@ -42,15 +43,19 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             var writer1 = context.GetWriter(record, GeneratedType.Entity);
             var gen1 = new EntityClassWriter(record, service.Schema, writer1, context);
             gen1.Generate();
-
-
         }
 
         void GenerateConverter(RecordEntity record)
         {
-            var writer2 = context.GetWriter(record, GeneratedType.Converter);
-            var gen2 = new RecordConverterWriter(record, service, writer2, context);
-            gen2.Generate();
+            var codeWriter = context.GetWriter(record, GeneratedType.Converter);
+            var convWriter = new RecordConverterWriter(record, service, codeWriter, context);
+            convWriter.Generate();
+        }
+
+        private void GenerateConverter(EnumEntity e)
+        {
+            var writer = context.GetWriter(e, GeneratedType.Converter);
+            new EnumConverterWriter(e, service, writer, context).Generate();
         }
 
         void GenerateEnum(EnumEntity enumEntity)

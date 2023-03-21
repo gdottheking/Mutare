@@ -35,7 +35,7 @@ namespace Sharara.EntityCodeGen.Core.Rpc
 
         private void AddProcedures(RecordEntity record)
         {
-            var pkArgs = record.Keys().Select(
+            var pkArgs = record.GetKeyFields().Select(
                 k => new Argument(k.FieldType, k.Name.ToCamelCase())
             ).ToArray();
 
@@ -51,7 +51,7 @@ namespace Sharara.EntityCodeGen.Core.Rpc
             operations.Add(
                 new Procedure(record,
                     OperationType.Put,
-                    new Argument(new FieldType.EntityRef(record), record.Name!.ToCamelCase())
+                    new Argument(new FieldType.Entity(record), record.Name!.ToCamelCase())
                 )
             );
         }
@@ -72,8 +72,8 @@ namespace Sharara.EntityCodeGen.Core.Rpc
                 {
                     return ProcedureType switch
                     {
-                        OperationType.List => new FieldType.List(new FieldType.EntityRef(Record)), // HACK
-                        OperationType.Get => new FieldType.EntityRef(Record),
+                        OperationType.List => new FieldType.List(new FieldType.Entity(Record)),
+                        OperationType.Get => new FieldType.Entity(Record),
                         OperationType.Count => FieldType.Int64.Instance,
                         OperationType.Delete => FieldType.Void.Instance,
                         OperationType.Put => FieldType.Void.Instance,

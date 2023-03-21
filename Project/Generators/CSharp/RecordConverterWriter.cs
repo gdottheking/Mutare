@@ -8,7 +8,6 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
     {
         private Service service;
         private CodeGeneratorContext context;
-        private readonly RecordEntity record;
         public const string FormatString = "yyyyMMddHHmmsss.zzz";
 
         public RecordConverterWriter(RecordEntity record,
@@ -17,7 +16,6 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             CodeGeneratorContext context)
             : base(codeWriter)
         {
-            this.record = record;
             this.service = service;
             this.context = context;
             this.Record = record;
@@ -54,14 +52,27 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             base.WriteFields();
             codeWriter.WriteLine($"const string DateFormatString = \"{FormatString}\";");
+
+            List<string> converterClassNames = new List<string>();
             foreach (var field in Record.Fields)
             {
-                if (field is ReferenceField r)
+                if (field.FieldType is FieldType.Entity)
                 {
-                    var converterClassName = GetConverterClassName(r.FieldType);
-                    codeWriter.WriteLine($"private static readonly {converterClassName} {converterClassName.ToCamelCase()} = new();");
+                    var className = GetConverterClassName(field.FieldType);
+                    converterClassNames.Add(className);
+                }
+                else if (field.FieldType is FieldType.List ftl && ftl.ItemType is FieldType.Entity)
+                {
+                    var className = GetConverterClassName(ftl.ItemType);
+                    converterClassNames.Add(className);
                 }
             }
+
+            foreach (string className in converterClassNames)
+            {
+                codeWriter.WriteLine($"private static readonly {className} {className.ToCamelCase()} = new();");
+            }
+
             codeWriter.WriteLine();
         }
 
@@ -76,7 +87,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void Write_ToMessage()
         {
             var recClassName = context.GetTypeName(Record, GeneratedType.Entity);
-            using (codeWriter.CurlyBracketScope($"public proto::{Record.Name} ToMessage({recClassName} entity)"))
+            using (codeWriter.CurlyBracketScope($"public proto::{Record.Name} Convert({recClassName} entity)"))
             {
                 codeWriter.WriteLines(
                     $"ArgumentNullException.ThrowIfNull(entity);",
@@ -106,20 +117,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     else if (field is ReferenceField r)
                     {
                         var entity = context.GetEntity(r.FieldType);
-                        if (entity is RecordEntity)
-                        {
-                            var converterClassName = GetConverterClassName(r.FieldType);
-                            codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.ToMessage({rhs});");
-                            codeWriter.WriteLine($"// TODO: Id not set");
-                        }
-                        else if (entity is EnumEntity enumEntity)
-                        {
-                            var keys = enumEntity.BackingRecord__Hack().Keys();
-                            foreach (var key in keys)
-                            {
-                                codeWriter.WriteLine($"{lhs} = (proto::{entity.Name}) {rhs};");
-                            }
-                        }
+                        var converterClassName = GetConverterClassName(r.FieldType);
+                        codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.Convert({rhs});");
+                        codeWriter.WriteLine($"// TODO: Id not set");
                     }
                     else if (field is ListField lf)
                     {
@@ -128,9 +128,15 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                             string itemClrType = context.MapToClrTypeName(lf.FieldType.ItemType);
                             codeWriter.WriteLine($"{lhs}.AddRange({rhs});");
                         }
-                        else
+                        else if (lf.FieldType.ItemType is FieldType.Entity ftEnt)
                         {
-                            codeWriter.WriteLine($"// List assignment not implemented {lhs} = {rhs}");
+                            var entity = context.GetEntity(ftEnt);
+                            var converterClassName = GetConverterClassName(ftEnt);
+                            codeWriter.WriteLines(
+                                $"{lhs}.AddRange(",
+                                $"      {rhs}.Select(item => {converterClassName.ToCamelCase()}.Convert(item))",
+                                ");"
+                            );
                         }
                     }
                 }
@@ -141,7 +147,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void Write_ToEntity()
         {
             var recClassName = context.GetTypeName(Record, GeneratedType.Entity);
-            using (codeWriter.CurlyBracketScope($"public {recClassName} ToEntity(proto::{Record.Name} message)"))
+            using (codeWriter.CurlyBracketScope($"public {recClassName} Convert(proto::{Record.Name} message)"))
             {
                 codeWriter.WriteLine($"{recClassName} entity = new();");
                 foreach (var field in Record.Fields)
@@ -169,7 +175,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     else if (field is ReferenceField r)
                     {
                         var converterClassName = GetConverterClassName(r.FieldType);
-                        codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.ToEntity({rhs});");
+                        codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.Convert({rhs});");
                     }
                     else if (field is ListField lf)
                     {
@@ -183,12 +189,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                             codeWriter.WriteLine($"// TODO: Assign {field.Name} = {lhs}");
                         }
                     }
-
                 }
-
                 codeWriter.WriteLine("return entity;");
             }
         }
-
     }
 }

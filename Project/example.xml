@@ -22,14 +22,15 @@
 
         <record name="Test" plural="Tests">
             <fields>
-                <ref name="RecordStatus" entity="RecordStatus" pb:id="10" />
+                <ref name="RecordStatus" entity="RecordStatus" pb:id="8" />
                 <ref name="Business" entity="Business" pb:id="1" />
                 <list of="Address" name="Addresses" pb:id="2" />
                 <list of="str" name="Lines" pb:id="3" />
+                <list of="RecordStatus" name="ListOfRecordStatus" pb:id="7" />
                 <i32 name="Height" minValue="180" maxValue="200" pb:id="4" />
                 <str name="FourLetterWord" regex="([A-Za-z]){4}"
-                    minLength="4" maxLength="4"
-                    pb:id="5" transform="toUpper,trim" />
+                     minLength="4" maxLength="4" pb:id="5"
+                     transform="toUpper,trim" />
                 <date name="Birthday" pb:id="6" />
             </fields>
         </record>
@@ -37,8 +38,7 @@
         <record name="Business" plural="Businesses">
             <fields>
                 <i64 name="Id" required="true" key="true" pb:id="1" />
-                <str name="Title" minLength="3" maxLength="255" required="true" checkOnUpdate="true"
-                    pb:id="2" />
+                <str name="Title" minLength="3" maxLength="255" required="true" checkOnUpdate="true" pb:id="2" />
                 <ref name="Address" entity="Address" pb:id="3" />
                 <ref name="Status" entity="RecordStatus" pb:id="4" />
             </fields>

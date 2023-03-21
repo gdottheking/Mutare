@@ -48,44 +48,35 @@ namespace Sharara.EntityCodeGen.Core.Fields
             public override string GrpcType { get; } = "string";
         }
 
-        public class EntityRef : FieldType
+        public class Entity : FieldType
         {
-            public EntityRef(Entity e)
+            private Core.Entity? resolvedEntity;
+            private string? unresolvedEntityName;
+
+            public Entity(Core.Entity e)
             {
-                this.Entity = e;
+                this.resolvedEntity = e;
             }
 
-            public Entity Entity { get; }
-            public override string GrpcType
+            public Entity(string name)
             {
-                get => Entity.Name;
-            }
-        }
-
-        public class EntityNameRef : FieldType
-        {
-            private Entity? resolvedEntity;
-
-            public EntityNameRef(string name)
-            {
-                this.EntityName = name;
+                this.unresolvedEntityName = name;
             }
 
-            public string EntityName { get; }
+            public string? UnresolvedEntityName => unresolvedEntityName;
 
-            public Entity ResolvedEntity
+            public bool HasEntity => resolvedEntity != null;
+
+            public Core.Entity GetEntity()
             {
-                get
+                if (resolvedEntity == null)
                 {
-                    if (resolvedEntity == null)
-                    {
-                        throw new InvalidOperationException("Unresolved entity: " + EntityName);
-                    }
-                    return resolvedEntity;
+                    throw new InvalidOperationException("Unresolved entity: " + UnresolvedEntityName);
                 }
+                return resolvedEntity;
             }
 
-            public void ResolveTo(Entity entity)
+            public void ResolveTo(Core.Entity entity)
             {
                 resolvedEntity = entity;
             }
@@ -94,8 +85,8 @@ namespace Sharara.EntityCodeGen.Core.Fields
             {
                 get
                 {
-                    return ResolvedEntity?.Name ??
-                        throw new InvalidOperationException("Unresolved entity " + EntityName);
+                    return resolvedEntity?.Name ??
+                        throw new InvalidOperationException("Unresolved entity " + UnresolvedEntityName);
                 }
             }
         }

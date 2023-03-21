@@ -90,10 +90,7 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
                 FieldType.Int64 x => x.GrpcType,
                 FieldType.Int32 x => x.GrpcType,
                 FieldType.String x => x.GrpcType,
-                FieldType.EntityRef entRef => entRef.Entity.Name,
-                FieldType.EntityNameRef nameRef =>
-                    nameRef.ResolvedEntity?.Name ??
-                    throw new InvalidOperationException("Unresolved entity " + nameRef.EntityName),
+                FieldType.Entity entRef => entRef.GetEntity().Name,
                 FieldType.List lst => $"repeated ${MapToGrpcType(lst.ItemType)}",
                 _ => throw new InvalidOperationException($"{fieldType} does not have a matching protobuf type")
             };

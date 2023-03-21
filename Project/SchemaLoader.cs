@@ -77,25 +77,28 @@ namespace Sharara.EntityCodeGen
             records.ForEach(x => entityById.Add(x.Name!, x));
             enums.ForEach(x => entityById.Add(x.Name!, x));
 
-            Action<FieldType.EntityNameRef> resolve = (nameRef) =>
+            Action<FieldType.Entity> resolve = (nameRef) =>
             {
-                if (!entityById.ContainsKey(nameRef.EntityName))
+                ArgumentNullException.ThrowIfNull(nameRef.UnresolvedEntityName);
+                if (!entityById.ContainsKey(nameRef.UnresolvedEntityName))
                 {
-                    throw new InvalidOperationException($"Entity {nameRef.EntityName} not found");
+                    throw new InvalidOperationException($"Entity {nameRef.UnresolvedEntityName} not found");
                 }
-                nameRef.ResolveTo(entityById[nameRef.EntityName]);
+                nameRef.ResolveTo(entityById[nameRef.UnresolvedEntityName]);
             };
 
             foreach (var rec in records)
             {
                 foreach (var field in rec.Fields)
                 {
-                    if (field.FieldType is FieldType.EntityNameRef nameRef1)
+                    if (field.FieldType is FieldType.Entity nameRef1 &&
+                        !nameRef1.HasEntity)
                     {
                         resolve(nameRef1);
                     }
                     else if (field.FieldType is FieldType.List listf &&
-                        listf.ItemType is FieldType.EntityNameRef nameRef2)
+                        listf.ItemType is FieldType.Entity nameRef2 &&
+                        !nameRef2.HasEntity)
                     {
                         resolve(nameRef2);
                     }
@@ -333,7 +336,7 @@ namespace Sharara.EntityCodeGen
                 Int32Field.XmlTypeName => FieldType.Int32.Instance,
                 Int64Field.XmlTypeName => FieldType.Int64.Instance,
                 StringField.XmlTypeName => FieldType.String.Instance,
-                _ => new FieldType.EntityNameRef(itemTypeName)
+                _ => new FieldType.Entity(itemTypeName)
             };
         }
 
@@ -354,7 +357,7 @@ namespace Sharara.EntityCodeGen
                 Float64Field.XmlTypeName => new Float64Field(fieldName),
                 Int32Field.XmlTypeName => new Int32Field(fieldName),
                 Int64Field.XmlTypeName => new Int64Field(fieldName),
-                ReferenceField.XmlTypeName => new ReferenceField(new FieldType.EntityNameRef(MustGetString(el, "entity")), fieldName),
+                ReferenceField.XmlTypeName => new ReferenceField(new FieldType.Entity(MustGetString(el, "entity")), fieldName),
                 ListField.XmlTypeName => CreateListField(el, fieldName),
                 StringField.XmlTypeName => new StringField(fieldName),
                 _ => throw new NotImplementedException(fieldType + " Unknown")

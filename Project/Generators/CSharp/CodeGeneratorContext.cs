@@ -69,8 +69,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 FieldType.Int32 x => Coerce(x.ClrType),
                 FieldType.String x => Coerce(x.ClrType),
                 FieldType.List l => $"IEnumerable<{MapToClrTypeName(l.ItemType)}>",
-                FieldType.EntityRef entyRef => GetTypeName(entyRef.Entity, GeneratedType.Entity),
-                FieldType.EntityNameRef nameRef => GetTypeName(nameRef.ResolvedEntity!, GeneratedType.Entity),
+                FieldType.Entity x => GetTypeName(x.GetEntity(), GeneratedType.Entity),
                 _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
             };
         }
@@ -96,18 +95,16 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         public Entity GetEntity(FieldType fieldType)
         {
-            if (fieldType is FieldType.EntityRef eref)
+            if (fieldType is FieldType.Entity entf)
             {
-                return eref.Entity;
+                return entf.GetEntity();
             }
-            else if (fieldType is FieldType.EntityNameRef nref)
+            else if (fieldType is FieldType.List ftl)
             {
-                return nref.ResolvedEntity;
+                return GetEntity(ftl.ItemType);
             }
-            else
-            {
-                throw new InvalidOperationException();
-            }
+            throw new InvalidOperationException();
+
         }
     }
 }
