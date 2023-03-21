@@ -76,7 +76,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             WriteValidationConstants();
             WriteLine();
 
-            foreach (var field in record.fields)
+            foreach (var field in record.Fields)
             {
                 field.Accept(this);
             }
@@ -141,7 +141,6 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         public void VisitFloat64Field(Float64Field field)
         {
             WriteClrField(field);
-
         }
 
         public void VisitDateTimeField(DateTimeField field)
@@ -152,23 +151,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         public void VisitReferenceField(ReferenceField field)
         {
-            Entity refEntity;
-            if (field.FieldType is FieldType.EntityNameRef nameRef)
-            {
-                if (!schema.HasEntityName(nameRef.EntityName))
-                {
-                    throw new InvalidOperationException($"Unknown entity: {nameRef.EntityName}");
-                }
-                refEntity = schema.GetEntityByName(nameRef.EntityName);
-            }
-            else if (field.FieldType is FieldType.EntityRef ety)
-            {
-                refEntity = ety.Entity;
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            Entity refEntity = context.GetEntity(field.FieldType);
 
             if (refEntity is RecordEntity refRecord)
             {
@@ -207,7 +190,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
             WriteLine("var result = new List<ValidationResult>();");
 
-            foreach (var field in record.fields)
+            foreach (var field in record.Fields)
             {
                 if (field is StringField strf)
                 {
@@ -221,7 +204,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         private void WriteValidationConstants()
         {
-            foreach (var field in record.fields)
+            foreach (var field in record.Fields)
             {
                 if (field is StringField strf)
                 {

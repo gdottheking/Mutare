@@ -99,5 +99,40 @@ namespace Sharara.EntityCodeGen.Generators
                 throw new ObjectDisposedException("TextWriter");
             }
         }
+
+        public IDisposable CurlyBracketScope(string start, bool bracketOnNewLine = true)
+        {
+            var arg = bracketOnNewLine ?
+                new string[] { start, "{" } :
+                new string[] { start + "{" };
+
+            return new Scope(this, arg, new string[] { "}" });
+        }
+
+        public class Scope : IDisposable
+        {
+            private CodeWriter cw;
+            private IEnumerable<string> closing;
+
+            public Scope(CodeWriter cw, IEnumerable<string> opening, IEnumerable<string> closing)
+            {
+                this.cw = cw;
+                this.closing = closing;
+                foreach (var line in opening)
+                {
+                    this.cw.WriteLine(line);
+                }
+                this.cw.Indent();
+            }
+
+            public void Dispose()
+            {
+                this.cw.UnIndent();
+                foreach (var line in closing)
+                {
+                    this.cw.WriteLine(line);
+                }
+            }
+        }
     }
 }

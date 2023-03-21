@@ -1,4 +1,3 @@
-using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.Protobuf
@@ -13,18 +12,13 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         void WriteServiceDecl(Service service, CodeWriter codeWriter)
         {
-            codeWriter.WriteLine()
-                .WriteLines($"service {Common.GrpcServiceName} ", "{")
-                .Indent();
-
-            foreach (var proc in service.Procedures)
+            using (codeWriter.CurlyBracketScope($"service {Common.GrpcServiceName} ", false))
             {
-                WriteMethod(codeWriter, proc);
+                foreach (var proc in service.Procedures)
+                {
+                    WriteMethod(codeWriter, proc);
+                }
             }
-
-            codeWriter.UnIndent()
-                .WriteLine("}")
-                .WriteLine();
         }
 
         void WriteMethod(CodeWriter codeWriter, IProcedure proc)
@@ -36,18 +30,20 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         void WriteReqRepMsgs(Service service, CodeWriter codeWriter)
         {
-            codeWriter.WriteLines("message Error {").Indent()
-                .WriteLines(
+            using (codeWriter.CurlyBracketScope("message Error ", false))
+            {
+                codeWriter.WriteLines(
                     "int64 ccode = 1;",
                     "string message = 2;"
-                ).UnIndent()
-                .WriteLine("}")
-                .WriteLine();
+                );
+            }
+            codeWriter.WriteLine();
 
-            codeWriter.WriteLine("message Errors {").Indent()
-                .WriteLine("repeated Error errors = 1;").UnIndent()
-                .WriteLine("}")
-                .WriteLine();
+            using (codeWriter.CurlyBracketScope("message Errors ", false))
+            {
+                codeWriter.WriteLine("repeated Error errors = 1;");
+            }
+            codeWriter.WriteLine();
 
             foreach (var proc in service.Procedures)
             {
@@ -59,23 +55,28 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
         void WriteReqRepMsgs(CodeWriter codeWriter, IProcedure proc)
         {
             string repMsgName = proc.Name + "Response";
-            codeWriter.WriteLines($"message {repMsgName}", "{")
-                .Indent()
-                .WriteLine("oneof result {")
-                .Indent()
-                .WriteLines(
-                    "Errors errors = 1;",
-                    "int64 payload = 2;"
-                ).UnIndent()
-                .WriteLine("}")
-                .UnIndent()
-                .WriteLine("}")
-                .WriteLine();
+            using (codeWriter.CurlyBracketScope($"message {repMsgName} ", false))
+            {
+                using (codeWriter.CurlyBracketScope("oneof result ", false))
+                {
+                    codeWriter.WriteLines(
+                        "Errors errors = 1;",
+                        "int64 payload = 2;"
+                    );
+                }
+            }
 
+            codeWriter.WriteLine();
 
             string reqMsgName = proc.Name + "Request";
-            codeWriter.WriteLines($"message {reqMsgName}", "{", "}");
-        }
+            using (codeWriter.CurlyBracketScope($"message {reqMsgName} ", false))
+            {
+                codeWriter.WriteLine(
+                    $"{proc.Record.Name} {proc.Record.Name.ToGrpcNamingConv()} = 1;"
+                );
+            }
 
+        }
     }
+
 }

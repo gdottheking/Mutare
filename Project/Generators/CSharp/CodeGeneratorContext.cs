@@ -94,5 +94,20 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             return $"{typeName} {arg.Name}";
         }
 
+        public Entity GetEntity(FieldType fieldType)
+        {
+            if (fieldType is FieldType.EntityRef eref)
+            {
+                return eref.Entity;
+            }
+            else if (fieldType is FieldType.EntityNameRef nref)
+            {
+                return nref.ResolvedEntity;
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
+        }
     }
 }

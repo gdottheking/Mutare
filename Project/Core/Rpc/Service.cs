@@ -24,20 +24,19 @@ namespace Sharara.EntityCodeGen.Core.Rpc
             {
                 if (e is RecordEntity r)
                 {
-                    AddOperations(r);
+                    AddProcedures(r);
                 }
                 else if (e is EnumEntity en)
                 {
-                    AddOperations(en.BackingRecord__Hack());
+                    AddProcedures(en.BackingRecord__Hack());
                 }
             }
         }
 
-
-        private void AddOperations(RecordEntity record)
+        private void AddProcedures(RecordEntity record)
         {
             var pkArgs = record.Keys().Select(
-                k => new Argument(k.FieldType, k.Name)
+                k => new Argument(k.FieldType, k.Name.ToCamelCase())
             ).ToArray();
 
             operations.Add(new Procedure(record, OperationType.Count));
@@ -45,26 +44,26 @@ namespace Sharara.EntityCodeGen.Core.Rpc
             operations.Add(new Procedure(record, OperationType.Get, pkArgs));
             operations.Add(
                 new Procedure(record, OperationType.List,
-                    new Argument(FieldType.Int64.Instance, "page"),
-                    new Argument(FieldType.Int64.Instance, "count")
+                    new Argument(FieldType.Int32.Instance, "page"),
+                    new Argument(FieldType.Int32.Instance, "count")
                 )
             );
             operations.Add(
                 new Procedure(record,
                     OperationType.Put,
-                    new Argument(new FieldType.EntityRef(record), record.Name!.ToLower())
+                    new Argument(new FieldType.EntityRef(record), record.Name!.ToCamelCase())
                 )
             );
         }
 
-        record Procedure(Entity Entity, OperationType ProcedureType, params Argument[] Arguments)
+        record Procedure(RecordEntity Record, OperationType ProcedureType, params Argument[] Arguments)
             : IProcedure
         {
             public string Name => ProcedureType switch
             {
-                OperationType.List => $"GetAll{Entity.PluralName}",
-                OperationType.Count => $"Get{Entity.Name}Count",
-                _ => $"{ProcedureType}{Entity.Name}"
+                OperationType.List => $"GetAll{Record.PluralName}",
+                OperationType.Count => $"Get{Record.Name}Count",
+                _ => $"{ProcedureType}{Record.Name}"
             };
 
             public FieldType ReturnType
@@ -73,8 +72,8 @@ namespace Sharara.EntityCodeGen.Core.Rpc
                 {
                     return ProcedureType switch
                     {
-                        OperationType.List => new FieldType.List(new FieldType.EntityRef(Entity)), // HACK
-                        OperationType.Get => new FieldType.EntityRef(Entity),
+                        OperationType.List => new FieldType.List(new FieldType.EntityRef(Record)), // HACK
+                        OperationType.Get => new FieldType.EntityRef(Record),
                         OperationType.Count => FieldType.Int64.Instance,
                         OperationType.Delete => FieldType.Void.Instance,
                         OperationType.Put => FieldType.Void.Instance,

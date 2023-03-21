@@ -64,17 +64,30 @@ namespace Sharara.EntityCodeGen.Core.Fields
 
         public class EntityNameRef : FieldType
         {
+            private Entity? resolvedEntity;
+
             public EntityNameRef(string name)
             {
                 this.EntityName = name;
             }
 
             public string EntityName { get; }
-            public Entity? ResolvedEntity { get; private set; }
+
+            public Entity ResolvedEntity
+            {
+                get
+                {
+                    if (resolvedEntity == null)
+                    {
+                        throw new InvalidOperationException("Unresolved entity: " + EntityName);
+                    }
+                    return resolvedEntity;
+                }
+            }
 
             public void ResolveTo(Entity entity)
             {
-                ResolvedEntity = entity;
+                resolvedEntity = entity;
             }
 
             public override string GrpcType

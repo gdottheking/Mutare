@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Rpc;
 using Sharara.EntityCodeGen.Generators;
@@ -18,20 +19,20 @@ namespace Sharara.EntityCodeGen
 
             CleanOutputFolder();
 
-            var codeWriterProvider = new CodeGeneratorContext(OutputFolder);
+            var context = new CodeGeneratorContext(OutputFolder);
 
             Console.WriteLine("Generating Entity classes");
-            var generator = new Generator(service, codeWriterProvider);
+            var generator = new Generator(service, context);
             generator.Generate();
 
             Console.WriteLine("Generating DatabaseContext");
             var dbCtxWriter = new CodeWriter(File.CreateText($"{OutputFolder}/DatabaseContext.cs"));
-            var dbContextGen = new DatabaseContextWriter(schema, dbCtxWriter, codeWriterProvider);
+            var dbContextGen = new DatabaseContextWriter(schema, dbCtxWriter, context);
             dbContextGen.Generate();
 
             Console.WriteLine("Generating proto file");
             var protoWriter = new CodeWriter(File.CreateText($"{OutputFolder}/AutoGenService.proto"));
-            var protoGen = new MessageGen(service, protoWriter);
+            var protoGen = new MessageGen(service, protoWriter, context);
             protoGen.Generate();
         }
 

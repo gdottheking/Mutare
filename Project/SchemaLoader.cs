@@ -88,7 +88,7 @@ namespace Sharara.EntityCodeGen
 
             foreach (var rec in records)
             {
-                foreach (var field in rec.fields)
+                foreach (var field in rec.Fields)
                 {
                     if (field.FieldType is FieldType.EntityNameRef nameRef1)
                     {
@@ -145,7 +145,7 @@ namespace Sharara.EntityCodeGen
                 switch (el.Name)
                 {
                     case FieldsElementName:
-                        entity.fields.AddRange(ReadFields(el));
+                        entity.Fields.AddRange(ReadFields(el));
                         break;
 
                     default:

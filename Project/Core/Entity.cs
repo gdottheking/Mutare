@@ -1,10 +1,8 @@
-using System.Text.RegularExpressions;
-
 namespace Sharara.EntityCodeGen.Core
 {
     abstract class Entity
     {
-        protected readonly Regex fieldNameRex = new Regex("^[A-Z]([a-z0-9])+(?:[A-Za-z0-9])*$");
+
 
         public string Name { get; private set; }
         public string PluralName { get; private set; }
@@ -22,12 +20,12 @@ namespace Sharara.EntityCodeGen.Core
 
         public virtual void Validate()
         {
-            if (!fieldNameRex.IsMatch(Name))
+            if (!Common.PascalCaseRegex.IsMatch(Name))
             {
                 throw new InvalidOperationException($"Entity name '{Name}' must be in PascalCase");
             }
 
-            if (!fieldNameRex.IsMatch(PluralName))
+            if (!Common.PascalCaseRegex.IsMatch(PluralName))
             {
                 throw new InvalidOperationException($"Entity name '{PluralName}' must be in PascalCase");
             }

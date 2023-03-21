@@ -6,14 +6,19 @@ namespace Sharara.EntityCodeGen.Core
     {
         public const string XmlTypeName = "record";
 
-        public readonly List<Field> fields = new List<Field>();
-
         public RecordEntity(string name, string pluralName)
             : base(name, pluralName)
         {
         }
 
-        public IEnumerable<Field> Keys() => fields.Where(f => f.IsKey);
+        public List<Field> Fields { get; } = new List<Field>();
+
+        public Field? this[string name]
+        {
+            get => Fields.Where(f => 0 == string.Compare(name, f.Name, true)).FirstOrDefault();
+        }
+
+        public IEnumerable<Field> Keys() => Fields.Where(f => f.IsKey);
 
         public override void Accept(IEntityVisitor visitor)
         {
@@ -24,10 +29,9 @@ namespace Sharara.EntityCodeGen.Core
         {
             base.Validate();
 
-
-            foreach (var field in fields)
+            foreach (var field in Fields)
             {
-                if (!fieldNameRex.IsMatch(field.Name))
+                if (!Common.PascalCaseRegex.IsMatch(field.Name))
                 {
                     throw new InvalidOperationException($"FieldName {Name}.{field.Name} must be in PascalCase");
                 }
@@ -36,7 +40,7 @@ namespace Sharara.EntityCodeGen.Core
             // Duplicates will throw
             try
             {
-                fields.ToDictionary(v => v.Name, v => v);
+                Fields.ToDictionary(v => v.Name, v => v);
             }
             catch (ArgumentException e)
             {
@@ -45,8 +49,8 @@ namespace Sharara.EntityCodeGen.Core
 
             try
             {
-                fields.ToDictionary(v => v.Name, v => v);
-                fields.ToDictionary(v => v.ProtoId, v => v);
+                Fields.ToDictionary(v => v.Name, v => v);
+                Fields.ToDictionary(v => v.ProtoId, v => v);
             }
             catch (ArgumentException e)
             {

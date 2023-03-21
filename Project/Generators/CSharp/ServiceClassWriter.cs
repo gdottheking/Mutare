@@ -1,3 +1,4 @@
+using Sharara.EntityCodeGen.Core.Fields;
 using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
@@ -11,6 +12,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             Imports.Add("using grpc = global::Grpc.Core;");
             Imports.Add($"using proto = global::{Common.ProtocOutputNamespace};");
+            Imports.Add("using System.ComponentModel.DataAnnotations;");
         }
 
         protected override string ClassKeyword => "class";
@@ -114,8 +116,14 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void WriteProcPut(IProcedure proc, ServiceProcClr outputNames)
         {
             OpenMethod(proc, outputNames);
-
-            codeWriter.WriteLine("throw new NotImplementedException();");
+            var entClassName = context.GetTypeName(proc.Record, GeneratedType.Entity);
+            codeWriter.WriteLine($"var input = new {entClassName}();");
+            codeWriter.WriteLines(
+                    "",
+                    "ValidationContext validationCtx = new (input);",
+                    "input.Validate(validationCtx);",
+                    $"await this.Repository.{outputNames.MethodName}(input);"
+                );
 
             CloseMethod();
         }
@@ -134,7 +142,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void WriteProcDelete(IProcedure proc, ServiceProcClr outputNames)
         {
-            string entityClassName = context.GetTypeName(proc.Entity, GeneratedType.Entity);
+            string entityClassName = context.GetTypeName(proc.Record, GeneratedType.Entity);
             OpenMethod(proc, outputNames);
 
             codeWriter.WriteLine("throw new NotImplementedException();");

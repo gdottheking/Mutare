@@ -24,7 +24,7 @@ namespace Sharara.EntityCodeGen.Core
 
             foreach (var enumValue in Values)
             {
-                if (!fieldNameRex.IsMatch(enumValue.Name))
+                if (!Common.PascalCaseRegex.IsMatch(enumValue.Name))
                 {
                     throw new InvalidOperationException($"Enum Value {Name}.{enumValue.Name} must be in PascalCase");
                 }
@@ -48,9 +48,9 @@ namespace Sharara.EntityCodeGen.Core
             if (backingRecord == null)
             {
                 backingRecord = new RecordEntity(Name, PluralName);
-                backingRecord.fields.Add(new Int64Field("Id") { IsKey = true, Required = true });
-                backingRecord.fields.Add(new StringField("Display") { MinLength = 0, MaxLength = 512 });
-                backingRecord.fields.Add(new StringField("Description") { MinLength = 0, MaxLength = 512 });
+                backingRecord.Fields.Add(new Int64Field("Id") { IsKey = true, Required = true });
+                backingRecord.Fields.Add(new StringField("Display") { MinLength = 0, MaxLength = 512 });
+                backingRecord.Fields.Add(new StringField("Description") { MinLength = 0, MaxLength = 512 });
             }
             return backingRecord;
         }

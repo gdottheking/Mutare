@@ -14,7 +14,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.service = service;
         }
 
-        public void Generate() {
+        public void Generate()
+        {
             GenerateEntities();
             GenerateRepository();
         }
@@ -23,20 +24,33 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             foreach (var entity in service.Schema.Entities)
             {
-                if(entity is RecordEntity r){
+                if (entity is RecordEntity r)
+                {
                     GenerateEntity(r);
-                } else if(entity is EnumEntity e) {
+                    GenerateConverter(r);
+                }
+                else if (entity is EnumEntity e)
+                {
                     GenerateEnum(e);
                     GenerateEntity(e.BackingRecord__Hack());
                 }
             }
         }
 
-        void GenerateEntity(RecordEntity entity)
+        void GenerateEntity(RecordEntity record)
         {
-            var writer = context.GetWriter(entity, GeneratedType.Entity);
-            var gen = new EntityClassWriter(entity, service.Schema, writer, context);
-            gen.Generate();
+            var writer1 = context.GetWriter(record, GeneratedType.Entity);
+            var gen1 = new EntityClassWriter(record, service.Schema, writer1, context);
+            gen1.Generate();
+
+
+        }
+
+        void GenerateConverter(RecordEntity record)
+        {
+            var writer2 = context.GetWriter(record, GeneratedType.Converter);
+            var gen2 = new RecordConverterWriter(record, service, writer2, context);
+            gen2.Generate();
         }
 
         void GenerateEnum(EnumEntity enumEntity)
@@ -47,7 +61,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             generator.Generate();
         }
 
-        void GenerateRepository() {
+        void GenerateRepository()
+        {
             using var ifaceCW = context.GetWriter(GeneratedType.RepoInterface);
             var ifaceGen = new RepositoryInterfaceWriter(service, ifaceCW, context);
             ifaceGen.Generate();

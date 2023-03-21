@@ -2,7 +2,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
 {
     class DateTimeField : Field
     {
-        public const string XmlTypeName = "dt";
+        public const string XmlTypeName = "date";
 
         public DateTimeField(string name)
             : base(FieldType.DateTime.Instance, name)

@@ -9,6 +9,8 @@ namespace Sharara.EntityCodeGen.Core.Fields
         {
         }
 
+        internal new FieldType.List FieldType => (FieldType.List)base.FieldType;
+
         public override void Accept(IFieldVisitor visitor)
         {
             visitor.VisitListField(this);

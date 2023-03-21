@@ -95,7 +95,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             string opReturnType = context.MapToClrTypeName(proc.ReturnType);
 
             codeWriter.WriteLines(
-                $"var num = dbContext.{proc.Entity.Name}.LongCount();",
+                $"var num = dbContext.{proc.Record.Name}.LongCount();",
                 $"return await(new ValueTask<long>(num));"
             );
 
@@ -107,7 +107,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             OpenMethod(proc);
 
             var args = string.Join(", ", proc.Arguments.Select(x => x.Name));
-            codeWriter.WriteLine($"return await dbContext.{proc.Entity.Name}.FindAsync({args});");
+            codeWriter.WriteLine($"return await dbContext.{proc.Record.Name}.FindAsync({args});");
 
             CloseMethod();
         }
@@ -117,7 +117,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             OpenMethod(proc);
 
             codeWriter.WriteLines(
-                $"await dbContext.{proc.Entity.Name}.AddAsync({proc.Arguments[0].Name});",
+                $"await dbContext.{proc.Record.Name}.AddAsync({proc.Arguments[0].Name});",
                 "await dbContext.SaveChangesAsync();"
             );
 
@@ -136,7 +136,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             codeWriter.WriteLines(
                 $"{idxArg.Name} = Math.Max(0, {idxArg.Name});",
                 $"var offset = (int)({idxArg.Name} * {countArg.Name});",
-                $"var items = dbContext.{proc.Entity.Name}",
+                $"var items = dbContext.{proc.Record.Name}",
                 $"   .Skip(offset)",
                 $"   .Take((int) {countArg.Name})",
                 "   .AsNoTracking();",
@@ -148,14 +148,16 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void WriteOpDelete(IProcedure proc)
         {
-            string entityClassName = context.GetTypeName(proc.Entity, GeneratedType.Entity);
+            string entityClassName = context.GetTypeName(proc.Record, GeneratedType.Entity);
             OpenMethod(proc);
 
-            var assigns = string.Join(", ", proc.Arguments.Select(x => $"{x.Name} = {x.Name}"));
+            var assigns = string.Join(", ",
+                proc.Arguments.Select(x => $"{proc.Record[x.Name!]?.Name} = {x.Name}")
+            );
 
             codeWriter.WriteLines(
                 $"var ety = new {entityClassName} {{ {assigns} }};",
-                $"dbContext.{proc.Entity.Name}.Remove(ety);",
+                $"dbContext.{proc.Record.Name}.Remove(ety);",
                 "await dbContext.SaveChangesAsync();"
             );
 

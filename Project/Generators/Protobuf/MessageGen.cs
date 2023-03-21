@@ -1,6 +1,7 @@
 using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Fields;
 using Sharara.EntityCodeGen.Core.Rpc;
+using Sharara.EntityCodeGen.Generators.CSharp;
 
 namespace Sharara.EntityCodeGen.Generators.Protobuf
 {
@@ -8,11 +9,13 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
     {
         private CodeWriter codeWriter;
         private Service service;
+        private CodeGeneratorContext context;
 
-        public MessageGen(Service service, CodeWriter codeWriter)
+        public MessageGen(Service service, CodeWriter codeWriter, CodeGeneratorContext context)
         {
             this.codeWriter = codeWriter;
             this.service = service;
+            this.context = context;
         }
 
         public void Generate()
@@ -38,9 +41,7 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
             codeWriter.WriteLines(
                 "",
-                "// ----------------------------------------------",
-                "//                       RPC                    //",
-                "// ----------------------------------------------",
+                "//                                 RPC                             //",
                 ""
             );
 
@@ -52,33 +53,26 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         public void VisitRecord(RecordEntity entity)
         {
-            codeWriter.WriteLine($"message {entity.Name} {{");
-            codeWriter.Indent();
-
-            foreach (var field in entity.fields)
+            using (codeWriter.CurlyBracketScope($"message {entity.Name} ", false))
             {
-                field.Accept(this);
+                foreach (var field in entity.Fields)
+                {
+                    field.Accept(this);
+                }
             }
-
-            codeWriter.UnIndent();
-            codeWriter.WriteLine("}");
-            codeWriter.UnIndent();
             codeWriter.Flush();
         }
 
         public void VisitEnum(EnumEntity entity)
         {
-            codeWriter.WriteLine($"enum {entity.Name} {{");
-            codeWriter.Indent();
-
-            for (int i = 0; i < entity.Values.Count; i++)
+            using (codeWriter.CurlyBracketScope($"enum {entity.Name} ", false))
             {
-                var val = entity.Values[i];
-                val.Accept(this, i, entity.Values.Count);
+                for (int i = 0; i < entity.Values.Count; i++)
+                {
+                    var val = entity.Values[i];
+                    val.Accept(this, i, entity.Values.Count);
+                }
             }
-
-            codeWriter.UnIndent();
-            codeWriter.WriteLine("}");
             codeWriter.Flush();
         }
 
@@ -107,10 +101,10 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         private void WriteField(string fieldName, int protoId, string protoType)
         {
-            codeWriter.WriteLine($"{protoType} {fieldName} = {protoId};");
+            codeWriter.WriteLine($"{protoType} {fieldName.ToGrpcNamingConv()} = {protoId};");
         }
 
-                void WriteField(Field field)
+        void WriteField(Field field)
         {
             WriteField(field.Name, field.ProtoId, MapToGrpcType(field.FieldType));
         }
@@ -142,39 +136,8 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
 
         public void VisitReferenceField(ReferenceField field)
         {
-            Entity refEntity;
-            if (field.FieldType is FieldType.EntityRef etyRef)
-            {
-                refEntity = etyRef.Entity;
-            }
-            else if (field.FieldType is FieldType.EntityNameRef nameRef)
-            {
-                if (!service.Schema.HasEntityName(nameRef.EntityName))
-                {
-                    throw new InvalidOperationException($"Unknown entity: {nameRef.EntityName}");
-                }
-                refEntity = service.Schema.GetEntityByName(nameRef.EntityName);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
-            if (refEntity is RecordEntity refRecord)
-            {
-                int offset = 0;
-                foreach (var fkField in refRecord.Keys())
-                {
-                    string fieldType = MapToGrpcType(fkField.FieldType);
-                    string fieldName = field.Name + fkField.Name;
-                    int protoId = field.ProtoId + offset++;
-                    codeWriter.WriteLine($"{fieldType} {fieldName} = {protoId};");
-                }
-            }
-            else if (refEntity is EnumEntity refEnum)
-            {
-                codeWriter.WriteLine($"{refEnum.Name} {field.Name} = {field.ProtoId};");
-            }
+            Entity refEntity = context.GetEntity(field.FieldType);
+            codeWriter.WriteLine($"{refEntity.Name} {field.Name.ToGrpcNamingConv()} = {field.ProtoId};");
         }
 
         public void VisitEnumValue(EnumValue value, int offset, int count)
@@ -185,7 +148,7 @@ namespace Sharara.EntityCodeGen.Generators.Protobuf
         public void VisitListField(ListField listField)
         {
             codeWriter.Write("repeated ");
-            var type = (FieldType.List) listField.FieldType;
+            var type = (FieldType.List)listField.FieldType;
             WriteField(listField.Name, listField.ProtoId, MapToGrpcType(type.ItemType));
         }
     }
