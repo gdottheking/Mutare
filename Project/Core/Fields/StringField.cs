@@ -1,7 +1,7 @@
 namespace Sharara.EntityCodeGen.Core.Fields
 {
     [Flags]
-    enum Transform
+    enum StringTransform
     {
         None = 0,
         TrimStart = 1,
@@ -17,7 +17,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
         public int? MinLength { get; set; }
         public int? MaxLength { get; set; }
         public string? RegexPattern { get; set; }
-        public Transform Transforms { get; set; } = Transform.Trim;
+        public StringTransform Transforms { get; set; } = StringTransform.Trim;
         public StringField(string name)
             : base(FieldType.String.Instance, name)
         {

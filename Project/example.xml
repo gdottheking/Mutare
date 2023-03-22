@@ -28,7 +28,8 @@
 
                 <str name="FourLetterWord" regex="([A-Za-z]){4}"
                      minLength="4" maxLength="4" pb:id="4"
-                     transform="toUpper,trim" />
+                     transform="toUpper,trim"
+                     default="good" />
 
                 <date name="Birthday" pb:id="5" />
 

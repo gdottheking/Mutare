@@ -16,14 +16,14 @@ namespace Sharara.EntityCodeGen.Core.Fields
             Name = name;
         }
 
-        public override string ToString()
-        {
-            return (IsRequired ? "*" : "") + $"{Name}:{FieldType}";
-        }
-
         public virtual void Accept(IFieldVisitor visitor)
         {
             visitor.VisitField(this);
+        }
+
+        public override string ToString()
+        {
+            return (IsRequired ? "*" : "") + $"{Name}:{FieldType}";
         }
     }
 }

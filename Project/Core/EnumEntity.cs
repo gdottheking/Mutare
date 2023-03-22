@@ -6,7 +6,7 @@ namespace Sharara.EntityCodeGen.Core
     {
         public const string XmlTypeName = "enum";
         public readonly List<EnumValue> Values = new List<EnumValue>();
-        private RecordEntity? backingRecord;
+        //private RecordEntity? backingRecord;
 
         public EnumEntity(string name, string pluralName)
             : base(name, pluralName, EntityType.Enum)

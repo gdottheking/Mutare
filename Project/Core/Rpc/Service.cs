@@ -39,30 +39,36 @@ namespace Sharara.EntityCodeGen.Core.Rpc
                 k => new Argument(k.FieldType, k.Name.ToCamelCase())
             ).ToArray();
 
-            operations.Add(new Procedure(record, OperationType.Count));
-            operations.Add(new Procedure(record, OperationType.Delete, pkArgs));
-            operations.Add(new Procedure(record, OperationType.Get, pkArgs));
+            operations.Add(new Procedure(record, ProcedureType.Count));
+            operations.Add(new Procedure(record, ProcedureType.Delete, pkArgs));
+            operations.Add(new Procedure(record, ProcedureType.Get, pkArgs));
             operations.Add(
-                new Procedure(record, OperationType.List,
+                new Procedure(record, ProcedureType.List,
                     new Argument(FieldType.Int32.Instance, "page"),
                     new Argument(FieldType.Int32.Instance, "count")
                 )
             );
             operations.Add(
                 new Procedure(record,
-                    OperationType.Put,
+                    ProcedureType.Put,
+                    new Argument(new FieldType.Entity(record), record.Name!.ToCamelCase())
+                )
+            );
+            operations.Add(
+                new Procedure(record,
+                    ProcedureType.Update,
                     new Argument(new FieldType.Entity(record), record.Name!.ToCamelCase())
                 )
             );
         }
 
-        record Procedure(RecordEntity Record, OperationType ProcedureType, params Argument[] Arguments)
+        record Procedure(RecordEntity Record, ProcedureType ProcedureType, params Argument[] Arguments)
             : IProcedure
         {
             public string Name => ProcedureType switch
             {
-                OperationType.List => $"GetAll{Record.PluralName}",
-                OperationType.Count => $"Get{Record.Name}Count",
+                ProcedureType.List => $"GetAll{Record.PluralName}",
+                ProcedureType.Count => $"Get{Record.Name}Count",
                 _ => $"{ProcedureType}{Record.Name}"
             };
 
@@ -72,11 +78,12 @@ namespace Sharara.EntityCodeGen.Core.Rpc
                 {
                     return ProcedureType switch
                     {
-                        OperationType.List => new FieldType.List(new FieldType.Entity(Record)),
-                        OperationType.Get => new FieldType.Entity(Record),
-                        OperationType.Count => FieldType.Int64.Instance,
-                        OperationType.Delete => FieldType.Void.Instance,
-                        OperationType.Put => FieldType.Void.Instance,
+                        ProcedureType.List => new FieldType.List(new FieldType.Entity(Record)),
+                        ProcedureType.Get => new FieldType.Entity(Record),
+                        ProcedureType.Count => FieldType.Int64.Instance,
+                        ProcedureType.Delete => FieldType.Void.Instance,
+                        ProcedureType.Put => FieldType.Void.Instance,
+                        ProcedureType.Update => FieldType.Void.Instance,
                         _ => throw new NotImplementedException()
                     };
                 }

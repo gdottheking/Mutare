@@ -1,12 +1,13 @@
 namespace Sharara.EntityCodeGen.Core.Rpc
 {
-    enum OperationType
+    enum ProcedureType
     {
         None,
         Put,
         Get,
         List,
         Count,
-        Delete
+        Delete,
+        Update
     }
 }

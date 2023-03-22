@@ -7,7 +7,6 @@ namespace Sharara.EntityCodeGen
     class SchemaLoader
     {
         const string NS_API = "https://codegen.sharara.com/api/v1";
-        const string NS_PROTO = "https://codegen.sharara.com/protobuf/v1";
         const string NS_DB = "https://codegen.sharara.com/database/v1";
         const string NS_CSHARP = "https://codegen.sharara.com/csharp/v1";
         public const string RecordsElementName = "records";
@@ -15,6 +14,24 @@ namespace Sharara.EntityCodeGen
         public const string EnumsElementName = "enums";
         public const string EnumElementName = "enum";
         public const string FieldsElementName = "fields";
+        private const string DefaultAttribute = "default";
+        private const string MinValueAttribute = "minValue";
+        private const string MaxValueAttribute = "maxValue";
+        private const string MinLengthAttribute = "minLength";
+        private const string MaxLengthAttribute = "maxLength";
+        private const string RegexAttribute = "regex";
+        private const string TransformAttribute = "transform";
+        private const string NameAttribute = "name";
+        private const string OfAttribute = "of";
+        private const string PluralAttribute = "plural";
+        private const string RequiredAttribute = "required";
+        private const string KeyAttribute = "key";
+        private const string EntityAttribute = "entity";
+        private const string CheckOnUpdateAttribute = "checkOnUpdate";
+
+        const string NS_PROTO = "https://codegen.sharara.com/protobuf/v1";
+        private const string ProtoIdAttribute = "pb:id";
+
 
         public Schema ReadDocument(string path)
         {
@@ -133,8 +150,8 @@ namespace Sharara.EntityCodeGen
 
         RecordEntity ReadRecord(XmlElement entityXmlElement)
         {
-            var recName = MustGetString(entityXmlElement, "name");
-            var recPluralName = MustGetString(entityXmlElement, "plural");
+            var recName = MustGetString(entityXmlElement, NameAttribute);
+            var recPluralName = MustGetString(entityXmlElement, PluralAttribute);
             RecordEntity entity = new RecordEntity(recName, recPluralName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
@@ -186,8 +203,8 @@ namespace Sharara.EntityCodeGen
 
         EnumEntity ReadEnum(XmlElement entityXmlElement)
         {
-            var enumName = MustGetString(entityXmlElement, "name");
-            var pluralName = MustGetString(entityXmlElement, "plural");
+            var enumName = MustGetString(entityXmlElement, NameAttribute);
+            var pluralName = MustGetString(entityXmlElement, PluralAttribute);
             EnumEntity entity = new EnumEntity(enumName, pluralName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
@@ -270,8 +287,8 @@ namespace Sharara.EntityCodeGen
         private Float64Field ReadFloat64Field(XmlElement el)
         {
             var field = (Float64Field)CreateField(el);
-            OptGetFloat64(el, "minValue", x => field.MinValue = x);
-            OptGetFloat64(el, "maxValue", x => field.MaxValue = x);
+            OptGetFloat64(el, MinValueAttribute, x => field.MinValue = x);
+            OptGetFloat64(el, MaxValueAttribute, x => field.MaxValue = x);
             return field;
         }
 
@@ -283,32 +300,47 @@ namespace Sharara.EntityCodeGen
         Int64Field ReadInt64Field(XmlElement el)
         {
             var field = (Int64Field)CreateField(el);
-            OptGetInt64(el, "minValue", x => field.MinValue = x);
-            OptGetInt64(el, "maxValue", x => field.MaxValue = x);
+            OptGetInt64(el, MinValueAttribute, x => field.MinValue = x);
+            OptGetInt64(el, MaxValueAttribute, x => field.MaxValue = x);
             return field;
         }
 
         Int32Field ReadInt32Field(XmlElement el)
         {
             var field = (Int32Field)CreateField(el);
-            OptGetInt32(el, "minValue", x => field.MinValue = x);
-            OptGetInt32(el, "maxValue", x => field.MaxValue = x);
+            OptGetInt32(el, MinValueAttribute, x => field.MinValue = x);
+            OptGetInt32(el, MaxValueAttribute, x => field.MaxValue = x);
             return field;
         }
 
         StringField ReadStringField(XmlElement el)
         {
             var field = (StringField)CreateField(el);
-            OptGetInt32(el, "minLength", x => field.MinLength = x);
-            OptGetInt32(el, "maxLength", x => field.MaxLength = x);
-            OptGetString(el, "regex", x => field.RegexPattern = x);
-            OptGetString(el, "transform", x =>
+            OptGetInt32(el, MinLengthAttribute, x => field.MinLength = x);
+            OptGetInt32(el, MaxLengthAttribute, x => field.MaxLength = x);
+            OptGetString(el, RegexAttribute, x => field.RegexPattern = x);
+            OptGetString(el, TransformAttribute, strTransAttr =>
             {
-                foreach (var str in x.Split(","))
+                StringTransform transform = StringTransform.None;
+                if (!string.IsNullOrWhiteSpace(strTransAttr))
                 {
-                    Transform transform = Enum.Parse<Transform>(str, true);
-                    field.Transforms |= transform;
+                    var splitBy = new string[] { ",", "|" };
+                    var parts = strTransAttr.Split(splitBy,
+                        StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+                    foreach (var str in parts)
+                    {
+                        if (Enum.TryParse<StringTransform>(str, true, out StringTransform temp))
+                        {
+                            transform |= temp;
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"Invalid Transform '{str}' on field {field.Name}");
+                        }
+                    }
                 }
+                field.Transforms = transform;
             });
             return field;
         }
@@ -321,14 +353,14 @@ namespace Sharara.EntityCodeGen
         EnumValue ReadEnumValue(XmlElement el)
         {
             var ev = new EnumValue();
-            ev.Name = MustGetString(el, "name");
+            ev.Name = MustGetString(el, NameAttribute);
             ev.Value = MustGetInt(el);
             return ev;
         }
 
         FieldType GetListItemType(XmlElement el)
         {
-            string itemTypeName = MustGetString(el, "of");
+            string itemTypeName = MustGetString(el, OfAttribute);
             return itemTypeName switch
             {
                 DateTimeField.XmlTypeName => FieldType.DateTime.Instance,
@@ -348,7 +380,7 @@ namespace Sharara.EntityCodeGen
 
         Field CreateField(XmlElement el)
         {
-            var fieldName = MustGetString(el, "name");
+            var fieldName = MustGetString(el, NameAttribute);
             var fieldType = el.Name;
 
             Field field = fieldType switch
@@ -357,7 +389,7 @@ namespace Sharara.EntityCodeGen
                 Float64Field.XmlTypeName => new Float64Field(fieldName),
                 Int32Field.XmlTypeName => new Int32Field(fieldName),
                 Int64Field.XmlTypeName => new Int64Field(fieldName),
-                ReferenceField.XmlTypeName => new ReferenceField(new FieldType.Entity(MustGetString(el, "entity")), fieldName),
+                ReferenceField.XmlTypeName => new ReferenceField(new FieldType.Entity(MustGetString(el, EntityAttribute)), fieldName),
                 ListField.XmlTypeName => CreateListField(el, fieldName),
                 StringField.XmlTypeName => new StringField(fieldName),
                 _ => throw new NotImplementedException(fieldType + " Unknown")
@@ -370,10 +402,10 @@ namespace Sharara.EntityCodeGen
 
         void ReadCommonFieldAttributes(Field field, XmlElement el)
         {
-            field.ProtoId = MustGetInt(el, "pb:id");
-            field.IsRequired = GetBool(el, "required");
-            field.IsKey = GetBool(el, "key");
-            field.CheckOnUpdate = GetBool(el, "checkOnUpdate");
+            field.ProtoId = MustGetInt(el, ProtoIdAttribute);
+            field.IsRequired = GetBool(el, RequiredAttribute);
+            field.IsKey = GetBool(el, KeyAttribute);
+            field.CheckOnUpdate = GetBool(el, CheckOnUpdateAttribute);
         }
 
         string MustGetString(XmlElement el, string attribName)

@@ -13,7 +13,7 @@ namespace Sharara.EntityCodeGen.Core.Rpc
         // TODO: These props are problematic because they aren't generic enough
         // They are tied to HOW the procedure works
         RecordEntity Record { get; }
-        OperationType ProcedureType { get; }
+        ProcedureType ProcedureType { get; }
     }
 
 }

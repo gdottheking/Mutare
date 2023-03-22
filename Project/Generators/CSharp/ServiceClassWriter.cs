@@ -51,23 +51,23 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             var outputNames = new ServiceProcClr(proc);
             switch (proc.ProcedureType)
             {
-                case OperationType.Count:
+                case ProcedureType.Count:
                     WriteCountProcedure(proc, outputNames);
                     break;
 
-                case OperationType.Put:
+                case ProcedureType.Put:
                     WritePutProcedure(proc, outputNames);
                     break;
 
-                case OperationType.Get:
+                case ProcedureType.Get:
                     WriteGetProcedure(proc, outputNames);
                     break;
 
-                case OperationType.List:
+                case ProcedureType.List:
                     WriteListProcedure(proc, outputNames);
                     break;
 
-                case OperationType.Delete:
+                case ProcedureType.Delete:
                     WriteDeleteProcedure(proc, outputNames);
                     break;
 

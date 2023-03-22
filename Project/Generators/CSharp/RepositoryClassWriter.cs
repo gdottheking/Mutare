@@ -56,23 +56,23 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             switch (proc.ProcedureType)
             {
-                case OperationType.Count:
+                case ProcedureType.Count:
                     WriteCountProcedure(proc);
                     break;
 
-                case OperationType.Put:
+                case ProcedureType.Put:
                     WritePutProcedure(proc);
                     break;
 
-                case OperationType.Get:
+                case ProcedureType.Get:
                     WriteGetProcedure(proc);
                     break;
 
-                case OperationType.List:
+                case ProcedureType.List:
                     WriteListProcedure(proc);
                     break;
 
-                case OperationType.Delete:
+                case ProcedureType.Delete:
                     WriteDeleteProcedure(proc);
                     break;
 
