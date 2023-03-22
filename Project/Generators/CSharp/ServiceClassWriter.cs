@@ -2,7 +2,7 @@ using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    class ServiceClassWriter : ClassWriter
+    sealed class ServiceClassWriter : ClassWriter
     {
 
         public ServiceClassWriter(Service service,
@@ -17,9 +17,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.Service = service;
         }
 
-        protected CodeGeneratorContext Context { get; }
+        CodeGeneratorContext Context { get; }
 
-        protected Service Service { get; }
+        Service Service { get; }
 
         protected override string TargetTypeName => Context.ServiceClassName;
 
@@ -43,7 +43,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override void WriteMethods()
         {
-             Service.Procedures.ToList().ForEach(WriteMethod);
+            Service.Procedures.ToList().ForEach(WriteMethod);
         }
 
         private void WriteMethod(IProcedure proc)
@@ -52,113 +52,101 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             switch (proc.ProcedureType)
             {
                 case OperationType.Count:
-                    WriteProcCount(proc, outputNames);
+                    WriteCountProcedure(proc, outputNames);
                     break;
 
                 case OperationType.Put:
-                    WriteProcPut(proc, outputNames);
+                    WritePutProcedure(proc, outputNames);
                     break;
 
                 case OperationType.Get:
-                    WriteProcGet(proc, outputNames);
+                    WriteGetProcedure(proc, outputNames);
                     break;
 
                 case OperationType.List:
-                    WriteProcList(proc, outputNames);
+                    WriteListProcedure(proc, outputNames);
                     break;
 
                 case OperationType.Delete:
-                    WriteProcDelete(proc, outputNames);
+                    WriteDeleteProcedure(proc, outputNames);
                     break;
 
                 default:
-                    OpenMethod(proc, outputNames);
-                    codeWriter.WriteLine("throw new NotImplementedException();");
-                    CloseMethod();
+                    using (OpenMethod(proc, outputNames))
+                    {
+                        codeWriter.WriteLine("throw new NotImplementedException();");
+                    }
                     break;
             }
         }
 
-        void OpenMethod(IProcedure proc, ServiceProcClr outputNames)
+        IDisposable OpenMethod(IProcedure proc, ServiceProcClr outputNames)
         {
             string opName = proc.Name;
             string returnType = $"Task<Proto::{outputNames.ResponseTypeName}>";
             codeWriter.WriteLines(
                     $"public override async {returnType} {opName}(",
-                    $"      Proto::{outputNames.RequestTypeName} request,",
-                    "      Grpc::ServerCallContext context)"
-                )
-                .WriteLine("{")
-                .Indent();
-        }
-
-        void CloseMethod()
-        {
-            codeWriter.UnIndent()
-                .WriteLine("}")
-                .WriteLine();
-        }
-
-        void WriteProcCount(IProcedure proc, ServiceProcClr outputNames)
-        {
-            OpenMethod(proc, outputNames);
-
-            codeWriter.WriteLines(
-                $"var count = await this.Repository.{outputNames.MethodName}();",
-                $"var response = new Proto::{outputNames.ResponseTypeName} {{ Payload = count }};",
-                "return response;"
+                    $"      Proto::{outputNames.RequestTypeName} request,"
             );
-
-            CloseMethod();
+            return codeWriter.CurlyBracketScope("      Grpc::ServerCallContext context)");
         }
 
-        void WriteProcGet(IProcedure proc, ServiceProcClr outputNames)
+        void WriteCountProcedure(IProcedure proc, ServiceProcClr outputNames)
         {
-            OpenMethod(proc, outputNames);
-
-            codeWriter.WriteLine("throw new NotImplementedException();");
-
-            CloseMethod();
-        }
-
-        void WriteProcPut(IProcedure proc, ServiceProcClr outputNames)
-        {
-            OpenMethod(proc, outputNames);
-            var converterClassName = Context.MapToDotNetType(proc.Record, RecordFile.Converter);
-            var entClassName = Context.MapToDotNetType(proc.Record, RecordFile.Entity);
-            codeWriter.WriteLine($"var input = new {entClassName}();");
-            codeWriter.WriteLines(
-                    "",
-                    "ValidationContext validationCtx = new (input);",
-                    "input.Validate(validationCtx);",
-                    $"await this.Repository.{outputNames.MethodName}(input);",
-                    $"Proto::{outputNames.ResponseTypeName} response = new();",
-                    $"return response;"
+            using (OpenMethod(proc, outputNames))
+            {
+                codeWriter.WriteLines(
+                    $"var count = await this.Repository.{outputNames.MethodName}();",
+                    $"var response = new Proto::{outputNames.ResponseTypeName} {{ Payload = count }};",
+                    "return response;"
                 );
-
-            CloseMethod();
+            }
         }
 
-        void WriteProcList(IProcedure proc, ServiceProcClr outputNames)
+        void WriteGetProcedure(IProcedure proc, ServiceProcClr outputNames)
+        {
+            using (OpenMethod(proc, outputNames))
+            {
+                codeWriter.WriteLine("throw new NotImplementedException();");
+            }
+        }
+
+        void WritePutProcedure(IProcedure proc, ServiceProcClr outputNames)
+        {
+            using (OpenMethod(proc, outputNames))
+            {
+                var converterClassName = Context.MapToDotNetType(proc.Record, RecordFile.Converter);
+                var entClassName = Context.MapToDotNetType(proc.Record, RecordFile.Entity);
+                codeWriter.WriteLine($"var input = new {entClassName}();");
+                codeWriter.WriteLines(
+                        "",
+                        "ValidationContext validationCtx = new (input);",
+                        "input.Validate(validationCtx);",
+                        $"await this.Repository.{outputNames.MethodName}(input);",
+                        $"Proto::{outputNames.ResponseTypeName} response = new();",
+                        $"return response;"
+                    );
+            }
+        }
+
+        void WriteListProcedure(IProcedure proc, ServiceProcClr outputNames)
         {
             var args = proc.Arguments;
             var idxArg = args[args.Length - 2];
             var countArg = args[args.Length - 1];
-            OpenMethod(proc, outputNames);
-
-            codeWriter.WriteLine("throw new NotImplementedException();");
-
-            CloseMethod();
+            using (OpenMethod(proc, outputNames))
+            {
+                codeWriter.WriteLine("throw new NotImplementedException();");
+            }
         }
 
-        void WriteProcDelete(IProcedure proc, ServiceProcClr outputNames)
+        void WriteDeleteProcedure(IProcedure proc, ServiceProcClr outputNames)
         {
             string entityClassName = Context.MapToDotNetType(proc.Record, RecordFile.Entity);
-            OpenMethod(proc, outputNames);
-
-            codeWriter.WriteLine("throw new NotImplementedException();");
-
-            CloseMethod();
+            using (OpenMethod(proc, outputNames))
+            {
+                codeWriter.WriteLine("throw new NotImplementedException();");
+            }
         }
 
         protected override void WriteFields()
