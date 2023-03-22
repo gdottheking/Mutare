@@ -20,7 +20,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override string ClassKeyword => "interface";
 
-        protected override string OutputTypeName => context.GetTypeName(GeneratedType.RepoInterface);
+        protected override string OutputTypeName => context.RepositoryInterfaceName;
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 

@@ -33,10 +33,10 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 {
                     WriteDbSet(rec);
                 }
-                else if (entity is EnumEntity ene)
-                {
-                    WriteDbSet(ene);
-                }
+                // else if (entity is EnumEntity ene)
+                // {
+                //     WriteDbSet(ene);
+                // }
             }
         }
 
@@ -44,10 +44,10 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             WriteOnConfiguringMethod();
             WriteMethodOnModelCreating();
-            //WriteMethodValidateEntity();
         }
 
-        protected override void WriteConstructor() {
+        protected override void WriteConstructor()
+        {
             // Constructor
             codeWriter.WriteLine($"public {OutputTypeName}([NotNullAttribute] DbContextOptions options)")
                 .Indent()
@@ -80,47 +80,17 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                             .WriteLine();
         }
 
-        // private void WriteMethodValidateEntity()
-        // {
-        //     codeWriter.WriteLines(
-        //         "protected override DbEntityValidationResult ValidateEntity(",
-        //         "   System.Data.Entity.Infrastructure.DbEntityEntry entityEntry,",
-        //         "   IDictionary<object, object> items)",
-        //         "{")
-        //         .Indent();
-
-        //     codeWriter.WriteLine("var result = new DbEntityValidationResult(entityEntry, new List<DbValidationError>());");
-        //     codeWriter.WriteLine()
-        //         .WriteLine("// TODO: Custom validation here!")
-        //         .WriteLine();
-
-        //     codeWriter.WriteLine("if (result.ValidationErrors.Count > 0)")
-        //         .WriteLine("{")
-        //         .Indent()
-        //         .WriteLine("return result;")
-        //         .UnIndent()
-        //         .WriteLine("}")
-        //         .WriteLine("else")
-        //         .WriteLine("{")
-        //         .Indent()
-        //         .WriteLine("return base.ValidateEntity(entityEntry, items);")
-        //         .UnIndent()
-        //         .WriteLine("}")
-        //         .UnIndent()
-        //         .WriteLine("}");
-        // }
-
-        private void WriteDbSet(RecordEntity rec)
+        private void WriteDbSet(RecordEntity recEntity)
         {
-            string typeName = codeWriterProvider.GetTypeName(rec, GeneratedType.Entity);
-            codeWriter.WriteLine($"public DbSet<{typeName}> {rec.Name} {{ get; set; }}")
+            string typeName = codeWriterProvider.MapToDotNetType(recEntity, RecordFile.Entity);
+            codeWriter.WriteLine($"public DbSet<{typeName}> {recEntity.Name} {{ get; set; }}")
             .WriteLine();
         }
 
-        private void WriteDbSet(EnumEntity ene)
+        private void WriteDbSet(EnumEntity enumEntity)
         {
-            string typeName = codeWriterProvider.GetTypeName(ene, GeneratedType.Entity);
-            codeWriter.WriteLine($"public DbSet<{typeName}> {ene.Name} {{ get; set; }}")
+            string typeName = codeWriterProvider.MapToDotNetType(enumEntity, EnumFile.Entity);
+            codeWriter.WriteLine($"public DbSet<{typeName}> {enumEntity.Name} {{ get; set; }}")
             .WriteLine();
         }
     }

@@ -33,50 +33,50 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 {
                     GenerateEnum(e);
                     GenerateConverter(e);
-                    GenerateEntity(e.BackingRecord__Hack());
+                    // GenerateEntity(e.BackingRecord__Hack());
                 }
             }
         }
 
         void GenerateEntity(RecordEntity record)
         {
-            var writer1 = context.GetWriter(record, GeneratedType.Entity);
+            var writer1 = context.GetWriter(record, RecordFile.Entity);
             var gen1 = new EntityClassWriter(record, service.Schema, writer1, context);
             gen1.Generate();
         }
 
         void GenerateConverter(RecordEntity record)
         {
-            var codeWriter = context.GetWriter(record, GeneratedType.Converter);
+            var codeWriter = context.GetWriter(record, RecordFile.Converter);
             var convWriter = new RecordConverterWriter(record, service, codeWriter, context);
             convWriter.Generate();
         }
 
         private void GenerateConverter(EnumEntity e)
         {
-            var writer = context.GetWriter(e, GeneratedType.Converter);
+            var writer = context.GetWriter(e, EnumFile.Converter);
             new EnumConverterWriter(e, service, writer, context).Generate();
         }
 
         void GenerateEnum(EnumEntity enumEntity)
         {
             // Write Enum file
-            using var codeWriter = context.GetWriter(enumEntity, GeneratedType.Enum);
+            using var codeWriter = context.GetWriter(enumEntity, EnumFile.Enum);
             var generator = new EnumWriter(service.Schema, enumEntity, codeWriter, context);
             generator.Generate();
         }
 
         void GenerateRepository()
         {
-            using var ifaceCW = context.GetWriter(GeneratedType.RepoInterface);
+            using var ifaceCW = context.GetWriter(context.RepositoryInterfaceName);
             var ifaceGen = new RepositoryInterfaceWriter(service, ifaceCW, context);
             ifaceGen.Generate();
 
-            using var classCW = context.GetWriter(GeneratedType.RepoClass);
+            using var classCW = context.GetWriter(context.RepositoryClassName);
             var classGen = new RepositoryClassWriter(service, classCW, context);
             classGen.Generate();
 
-            using var serviceCW = context.GetWriter(GeneratedType.Service);
+            using var serviceCW = context.GetWriter(context.ServiceClassName);
             var serviceGen = new ServiceClassWriter(service, serviceCW, context);
             serviceGen.Generate();
         }

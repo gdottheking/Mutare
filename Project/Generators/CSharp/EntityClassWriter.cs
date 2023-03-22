@@ -59,7 +59,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             return this;
         }
 
-        protected override string OutputTypeName => context.GetTypeName(record, GeneratedType.Entity);
+        protected override string OutputTypeName => context.MapToDotNetType(record, RecordFile.Entity);
 
         protected override string Namespace => schema.Configuration.CSharpNamespace;
 
@@ -157,7 +157,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
             if (refEntity.EntityType == EntityType.Record)
             {
-                var targetRec = (RecordEntity)refEntity;
+                RecordEntity targetRec = (RecordEntity)refEntity;
                 // Write shadow fields
                 var shadowFields = this.record.ShadowFields();
                 foreach (var shadow in shadowFields)
@@ -169,21 +169,34 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     }
 
                     // Write
-                    string refTypeName = context.GetTypeName(refEntity, GeneratedType.Entity);
+                    string refTypeName = context.MapToDotNetType(targetRec, RecordFile.Entity);
                     WriteClassProperty(field, refTypeName);
                 }
             }
             else if (refEntity.EntityType == EntityType.Enum)
             {
-                var refEnum = (EnumEntity)refEntity;
-                string enumName = context.GetTypeName(refEnum, GeneratedType.Enum);
+                EnumEntity refEnum = (EnumEntity)refEntity;
+                string enumName = context.MapToDotNetType(refEnum, EnumFile.Enum);
                 WriteClassProperty(field, enumName);
             }
         }
 
         public void VisitListField(ListField listField)
         {
-            WriteClassProperty(listField, context.MapToDotNetType(listField.FieldType));
+            string propType;
+            if (listField.FieldType.IsEnumOrListOfEnums())
+            {
+                var fte = (FieldType.Entity)(listField.FieldType.ItemType);
+                var ent = (EnumEntity) fte.GetEntity();
+                var type = context.MapToDotNetType(ent);
+                propType = $"IEnumerable<{type}>";
+            }
+            else
+            {
+                propType = context.MapToDotNetType(listField.FieldType);
+            }
+
+            WriteClassProperty(listField, propType);
         }
 
         class ValidationWriter : IFieldVisitor

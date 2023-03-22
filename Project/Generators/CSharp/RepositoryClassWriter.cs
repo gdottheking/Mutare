@@ -15,11 +15,11 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override string ClassKeyword => "class";
 
-        protected override string OutputTypeName => context.GetTypeName(GeneratedType.RepoClass);
+        protected override string OutputTypeName => context.RepositoryClassName;
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 
-        protected override string? Implements => context.GetTypeName(GeneratedType.RepoInterface);
+        protected override string? Implements => context.RepositoryInterfaceName;
 
         protected override void WriteBody()
         {
@@ -127,8 +127,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void WriteOpList(IProcedure proc)
         {
             var args = proc.Arguments;
-            var idxArg = args[args.Length-2];
-            var countArg = args[args.Length-1];
+            var idxArg = args[args.Length - 2];
+            var countArg = args[args.Length - 1];
             OpenMethod(proc);
 
             var retType = context.MapToDotNetType(proc.ReturnType);
@@ -148,7 +148,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void WriteOpDelete(IProcedure proc)
         {
-            string entityClassName = context.GetTypeName(proc.Record, GeneratedType.Entity);
+            string entityClassName = context.MapToDotNetType(proc.Record, RecordFile.Entity);
             OpenMethod(proc);
 
             var assigns = string.Join(", ",

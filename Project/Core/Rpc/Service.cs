@@ -26,10 +26,10 @@ namespace Sharara.EntityCodeGen.Core.Rpc
                 {
                     AddProcedures(r);
                 }
-                else if (e is EnumEntity en)
-                {
-                    AddProcedures(en.BackingRecord__Hack());
-                }
+                // else if (e is EnumEntity en)
+                // {
+                //     AddProcedures(en.BackingRecord__Hack());
+                // }
             }
         }
 

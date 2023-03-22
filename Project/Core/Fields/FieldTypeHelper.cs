@@ -24,5 +24,33 @@ namespace Sharara.EntityCodeGen.Core.Fields
                     fieldType is FieldType.Float64;
         }
 
+        public static bool IsEnumOrListOfEnums(this FieldType f)
+        {
+            if (f is FieldType.Entity fte && fte.GetEntity().EntityType == EntityType.Enum)
+            {
+                return true;
+            }
+            else if (f is FieldType.List fls)
+            {
+                return IsEnumOrListOfEnums(fls.ItemType);
+            }
+
+            return false;
+        }
+
+        public static bool IsRecOrListOfRecs(this FieldType f)
+        {
+            if (f is FieldType.Entity fte && fte.GetEntity().EntityType == EntityType.Record)
+            {
+                return true;
+            }
+            else if (f is FieldType.List fls)
+            {
+                return IsRecOrListOfRecs(fls.ItemType);
+            }
+
+            return false;
+        }
+
     }
 }

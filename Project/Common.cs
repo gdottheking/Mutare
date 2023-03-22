@@ -8,9 +8,10 @@ namespace Sharara.EntityCodeGen
 
         public const string GrpcServiceName = "Service";
         public const string ProtocOutputNamespace = "Sharara.Services.Kumusha.Generated.Proto";
-
+        public const string DateTimeFormatString = "yyyyMMddHHmmsss.zzz";
         public static readonly Regex PascalCaseRegex = new Regex("^[A-Z]([a-z0-9])+(?:[A-Za-z0-9])*$");
         public static readonly Regex PascalCaseWordRegex = new Regex("[A-Z][a-z0-9]*");
+
 
         static void AssertIsPascalCase(this string name)
         {

@@ -29,7 +29,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override string ClassKeyword => "class";
 
-        protected override string OutputTypeName => context.GetTypeName(Enum, GeneratedType.Converter);
+        protected override string OutputTypeName => context.MapToDotNetType(Enum, EnumFile.Converter);
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 
@@ -43,7 +43,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void Write_ToMessage()
         {
-            var enumName = context.GetTypeName(Enum, GeneratedType.Enum);
+            var enumName = context.MapToDotNetType(Enum, EnumFile.Enum);
             using (codeWriter.CurlyBracketScope($"public Proto::{Enum.Name} Convert({enumName} value)"))
             {
                 using (codeWriter.CurlyBracketScope("return value switch "))
@@ -61,7 +61,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void Write_ToEntity()
         {
-            var enumName = context.GetTypeName(Enum, GeneratedType.Enum);
+            var enumName = context.MapToDotNetType(Enum, EnumFile.Enum);
 
             using (codeWriter.CurlyBracketScope($"public {enumName} Convert(Proto::{Enum.Name} value)"))
             {

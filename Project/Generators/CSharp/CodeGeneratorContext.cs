@@ -11,54 +11,69 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             OutputFolder = outputFolder;
         }
 
+        public string RepositoryInterfaceName => "IRepository";
+        public string RepositoryClassName => "Repository";
+        public string ServiceClassName => "Service";
         public string OutputFolder { get; }
 
-        public string GetTypeName(GeneratedType type)
+        public CodeWriter GetWriter(RecordEntity record, RecordFile fileType)
         {
-            return type switch
-            {
-                GeneratedType.RepoInterface => "IRepository",
-                GeneratedType.RepoClass => "Repository",
-                GeneratedType.Service => "Service",
-                _ => throw new InvalidOperationException()
-            };
-        }
-
-        public string GetTypeName(Entity entity, GeneratedType type)
-        {
-            ArgumentNullException.ThrowIfNull(entity.Name);
-            return type switch
-            {
-                GeneratedType.None => entity.Name,
-                GeneratedType.Converter => entity.Name + "Converter",
-                GeneratedType.Entity => entity.Name + "Entity",
-                GeneratedType.Enum => entity.Name + "Enum",
-                _ => throw new InvalidOperationException()
-            };
-        }
-
-        public CodeWriter GetWriter(GeneratedType fileType)
-        {
-            var className = GetTypeName(fileType);
+            var className = MapToDotNetType(record, fileType);
             return GetWriter(className);
         }
 
-        public CodeWriter GetWriter(Entity entity, GeneratedType fileType)
+        public CodeWriter GetWriter(EnumEntity enumEntity, EnumFile fileType)
         {
-            var className = GetTypeName(entity, fileType);
+            var className = MapToDotNetType(enumEntity, fileType);
             return GetWriter(className);
         }
 
-        CodeWriter GetWriter(string className)
+        public CodeWriter GetWriter(string className)
         {
             var fileName = $"{OutputFolder}/{className}.cs";
             var writer = File.CreateText(fileName);
             return new CodeWriter(writer);
         }
 
+        public string MapToDotNetType(RecordEntity record, RecordFile recordFile = RecordFile.Entity)
+        {
+            ArgumentNullException.ThrowIfNull(record.Name);
+            return recordFile switch
+            {
+                RecordFile.Converter => record.Name + "Converter",
+                RecordFile.Entity => record.Name + "Entity",
+                _ => throw new InvalidOperationException()
+            };
+        }
+
+        public string MapToDotNetType(EnumEntity enumEntity, EnumFile enumFile = EnumFile.Enum)
+        {
+            ArgumentNullException.ThrowIfNull(enumEntity.Name);
+            return enumFile switch
+            {
+                EnumFile.Enum => enumEntity.Name + "Enum",
+                EnumFile.Entity => enumEntity.Name + "Entity",
+                EnumFile.Converter => enumEntity.Name + "Converter",
+                _ => throw new InvalidOperationException()
+            };
+        }
+
         public string MapToDotNetType(FieldType fieldType, bool forceNullable = false)
         {
             Func<string, string> Coerce = (clrType) => forceNullable ? clrType += "?" : clrType;
+
+            Func<Entity, string> MapEntity =  entity =>
+            {
+                if (entity.EntityType == EntityType.Record)
+                {
+                    return MapToDotNetType((RecordEntity)entity);
+                }
+                else if (entity.EntityType == EntityType.Enum)
+                {
+                    return MapToDotNetType((EnumEntity)entity);
+                }
+                throw new InvalidOperationException("Unexpected entity type");
+            };
 
             return fieldType switch
             {
@@ -68,8 +83,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 FieldType.Int64 x => Coerce(x.ClrType),
                 FieldType.Int32 x => Coerce(x.ClrType),
                 FieldType.String x => Coerce(x.ClrType),
-                FieldType.List l => $"IEnumerable<{MapToDotNetType(l.ItemType)}>",
-                FieldType.Entity x => GetTypeName(x.GetEntity(), GeneratedType.Entity),
+                FieldType.List x => $"IEnumerable<{MapToDotNetType(x.ItemType)}>",
+                FieldType.Entity x => MapEntity(x.GetEntity()),
                 _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
             };
         }

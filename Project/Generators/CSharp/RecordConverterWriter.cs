@@ -8,7 +8,6 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
     {
         private Service service;
         private CodeGeneratorContext context;
-        public const string FormatString = "yyyyMMddHHmmsss.zzz";
 
         public RecordConverterWriter(RecordEntity record,
             Service service,
@@ -30,7 +29,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override string ClassKeyword => "class";
 
-        protected override string OutputTypeName => context.GetTypeName(Record, GeneratedType.Converter);
+        protected override string OutputTypeName => context.MapToDotNetType(Record, RecordFile.Converter);
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 
@@ -45,13 +44,17 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         string GetConverterClassName(FieldType fieldType)
         {
             Entity entity = context.GetEntity(fieldType);
-            return context.GetTypeName(entity, GeneratedType.Converter);
+            return entity.EntityType switch
+            {
+                EntityType.Enum => context.MapToDotNetType((EnumEntity)entity, EnumFile.Converter),
+                _ => context.MapToDotNetType((RecordEntity)entity, RecordFile.Converter)
+            };
         }
 
         protected override void WriteFields()
         {
             base.WriteFields();
-            codeWriter.WriteLine($"const string DateFormatString = \"{FormatString}\";");
+            codeWriter.WriteLine($"const string DateFormatString = \"{Common.DateTimeFormatString}\";");
 
             HashSet<string> converterClassNames = new HashSet<string>();
             foreach (var field in Record.Fields)
@@ -78,7 +81,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void Write_ToMessage()
         {
-            var recClassName = context.GetTypeName(Record, GeneratedType.Entity);
+            var recClassName = context.MapToDotNetType(Record, RecordFile.Entity);
             using (codeWriter.CurlyBracketScope($"public Proto::{Record.Name} Convert({recClassName} entity)"))
             {
                 codeWriter.WriteLines(
@@ -132,8 +135,11 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     {
                         var entity = context.GetEntity(r.FieldType);
                         var converterClassName = GetConverterClassName(r.FieldType);
-                        codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.Convert({rhs});");
-                        codeWriter.WriteLine($"// TODO: Id not set");
+                        using (var _ = codeWriter.CurlyBracketScope($"if (null != {rhs})"))
+                        {
+                            codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.Convert({rhs});");
+                            codeWriter.WriteLine($"// TODO: Id not set");
+                        }
                     }
                     else if (field is ListField lf)
                     {
@@ -160,7 +166,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void Write_ToEntity()
         {
-            var recClassName = context.GetTypeName(Record, GeneratedType.Entity);
+            var recClassName = context.MapToDotNetType(Record, RecordFile.Entity);
             using (codeWriter.CurlyBracketScope($"public {recClassName} Convert(Proto::{Record.Name} message)"))
             {
                 codeWriter.WriteLine($"{recClassName} entity = new();");
@@ -190,8 +196,11 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     }
                     else if (field is ReferenceField r)
                     {
-                        var converterClassName = GetConverterClassName(r.FieldType);
-                        codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.Convert({rhs});");
+                        using (var _ = codeWriter.CurlyBracketScope($"if (null != {rhs})"))
+                        {
+                            var converterClassName = GetConverterClassName(r.FieldType);
+                            codeWriter.WriteLine($"{lhs} = {converterClassName.ToCamelCase()}.Convert({rhs});");
+                        }
                     }
                     else if (field is ListField lf)
                     {

@@ -16,7 +16,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.helper = helper;
         }
 
-        protected override string OutputTypeName => helper.GetTypeName(enumEntity, GeneratedType.Enum);
+        protected override string OutputTypeName => helper.MapToDotNetType(enumEntity, EnumFile.Enum);
 
         protected override string Namespace => schema.Configuration.CSharpNamespace;
 
