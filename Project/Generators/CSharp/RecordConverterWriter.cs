@@ -141,20 +141,23 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     }
                     else if (field is ListField lf)
                     {
-                        if (lf.FieldType.ItemType.IsSimpleAssignable())
+                        using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
                         {
-                            string itemClrType = context.MapToDotNetType(lf.FieldType.ItemType);
-                            codeWriter.WriteLine($"{lhs}.AddRange({rhs});");
-                        }
-                        else if (lf.FieldType.ItemType is FieldType.Entity ftEnt)
-                        {
-                            var entity = context.GetEntity(ftEnt);
-                            var converterClassName = GetConverterClassName(ftEnt);
-                            codeWriter.WriteLines(
-                                $"{lhs}.AddRange(",
-                                $"      {rhs}.Select(item => {converterClassName.ToCamelCase()}.Convert(item))",
-                                ");"
-                            );
+                            if (lf.FieldType.ItemType.IsSimpleAssignable())
+                            {
+                                string itemClrType = context.MapToDotNetType(lf.FieldType.ItemType);
+                                codeWriter.WriteLine($"{lhs}.AddRange({rhs});");
+                            }
+                            else if (lf.FieldType.ItemType is FieldType.Entity ftEnt)
+                            {
+                                var entity = context.GetEntity(ftEnt);
+                                var converterClassName = GetConverterClassName(ftEnt);
+                                codeWriter.WriteLines(
+                                    $"{lhs}.AddRange(",
+                                    $"      {rhs}.Select(item => {converterClassName.ToCamelCase()}.Convert(item))",
+                                    ");"
+                                );
+                            }
                         }
                     }
                 }
@@ -204,12 +207,21 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     {
                         if (lf.FieldType.ItemType.IsSimpleAssignable())
                         {
-                            string clrType = context.MapToDotNetType(lf.FieldType.ItemType);
-                            codeWriter.WriteLine($"{lhs} = new List<{clrType}>({rhs});");
+                            using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
+                            {
+                                string clrType = context.MapToDotNetType(lf.FieldType.ItemType);
+                                codeWriter.WriteLine($"{lhs} = new List<{clrType}>({rhs});");
+                            }
                         }
                         else
                         {
-                            codeWriter.WriteLine($"// TODO: Assign {field.Name} = {lhs}");
+                            var converterClassName = GetConverterClassName(lf.FieldType.ItemType);
+                            using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
+                            {
+                               codeWriter.WriteLines(
+                                    $"{lhs} = {rhs}.Select(it => {converterClassName.ToCamelCase()}.Convert(it));"
+                               );
+                            }
                         }
                     }
                 }
