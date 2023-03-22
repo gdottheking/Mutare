@@ -14,36 +14,15 @@ using System.Reflection;
 using System.IO;
 using App.Metrics.AspNetCore;
 using App.Metrics.Formatters.Prometheus;
+using Microsoft.AspNetCore.Mvc;
+
+[assembly: ApiController]
 
 namespace Sharara.Services.Kumusha
 {
 
     class Program
     {
-        public static async Task DatabaseTest()
-        {
-            var db = new DbCtx();
-            db.Database.EnsureCreated();
-
-            Console.WriteLine("Inserting address");
-            var repo = new Generated.Repository(db);
-            var ent = new Generated.AddressEntity
-            {
-                Line1 = new Random(DateTime.Now.Second).Next(100) + " Fairview Road",
-                PostalCode = "GU12 6AS"
-            };
-            await repo.PutAddressAsync(ent);
-            Console.WriteLine($"Address added with id = {ent.Id}");
-
-            var numAddr = await repo.GetAddressCountAsync();
-            Console.WriteLine($"There are {numAddr} addresses in the database");
-            var addresses = await repo.GetAllAddressesAsync(0, 1000);
-            foreach (var addr in addresses)
-            {
-                Console.WriteLine(addr.Line1 + " " + addr.PostalCode);
-            }
-        }
-
         public static IMetricsRoot Metrics { get; private set; }
 
         public static void Main(string[] args)
@@ -81,8 +60,11 @@ namespace Sharara.Services.Kumusha
 
         public static void Configure(IConfigurationBuilder builder)
         {
-            // string cfgPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "appsettings.common.json");
-            // builder.AddJsonFile(cfgPath, optional: false);
+            // string appSettingsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "appsettings.json");
+            // builder.AddJsonFile(appSettingsPath, optional: false);
+
+            // string devAppSettingsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "appsettings.Development.json");
+            // builder.AddJsonFile(appSettingsPath, optional: false);
         }
 
     }

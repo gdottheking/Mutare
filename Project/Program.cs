@@ -59,4 +59,5 @@ namespace Sharara.EntityCodeGen
         }
 
     }
+
 }

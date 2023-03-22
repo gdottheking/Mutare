@@ -18,8 +18,8 @@ namespace Sharara.EntityCodeGen.Core.Fields
         public int? MaxLength { get; set; }
         public string? RegexPattern { get; set; }
         public StringTransform Transforms { get; set; } = StringTransform.Trim;
-        public StringField(string name)
-            : base(FieldType.String.Instance, name)
+        public StringField(RecordEntity record, string name)
+            : base(record, FieldType.String.Instance, name)
         {
         }
 

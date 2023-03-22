@@ -1,4 +1,5 @@
 <document
+    xmlns="xsiNoSchema"
     xmlns:api="https://codegen.sharara.com/api/v1"
     xmlns:pb="https://codegen.sharara.com/protobuf/v1"
     xmlns:db="https://codegen.sharara.com/database/v1"
@@ -22,30 +23,32 @@
 
         <record name="Test" plural="Tests">
             <fields>
-                <i32 name="HeightInt32" minValue="180" maxValue="200" pb:id="1" />
+                <i32 key="true" name="HeightInt32" minValue="180" maxValue="200" pb:id="1" />
                 <i64 name="HeightInt64" minValue="180" maxValue="200" pb:id="2" />
                 <f64 name="HeightFloat64" minValue="180" maxValue="200" pb:id="3" />
 
                 <str name="FourLetterWord" regex="([A-Za-z]){4}"
-                     minLength="4" maxLength="4" pb:id="4"
-                     transform="toUpper,trim"
-                     default="good" />
+                    minLength="4" maxLength="4" pb:id="4"
+                    transform="toUpper,trim"
+                    default="good" />
 
                 <date name="Birthday" pb:id="5" />
 
                 <ref name="RecordStatus" entity="RecordStatus" pb:id="9" />
                 <ref name="Business" entity="Business" pb:id="10" />
 
-                <list of="str" name="ListOfStrings" pb:id="18" />
                 <list of="Address" name="ListOfAddresses" pb:id="19" />
+                <list of="str" name="ListOfStrings" pb:id="18" />
                 <list of="RecordStatus" name="ListOfRecordStatus" pb:id="20" />
+
             </fields>
         </record>
 
         <record name="Business" plural="Businesses">
             <fields>
                 <i64 name="Id" required="true" key="true" pb:id="1" />
-                <str name="Title" minLength="3" maxLength="255" required="true" checkOnUpdate="true" pb:id="2" />
+                <str name="Title" minLength="3" maxLength="255" required="true" checkOnUpdate="true"
+                    pb:id="2" />
                 <ref name="Address" entity="Address" pb:id="3" />
                 <ref name="Status" entity="RecordStatus" pb:id="4" />
             </fields>

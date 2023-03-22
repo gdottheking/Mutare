@@ -2,6 +2,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
 {
     class Field
     {
+        internal RecordEntity Record { get; }
         internal FieldType FieldType { get; }
 
         public string Name { get; set; }
@@ -10,8 +11,9 @@ namespace Sharara.EntityCodeGen.Core.Fields
         public bool CheckOnUpdate { get; set; }
         public int ProtoId { get; set; }
 
-        protected Field(FieldType type, string name)
+        protected Field(RecordEntity record, FieldType type, string name)
         {
+            this.Record = record;
             FieldType = type;
             Name = name;
         }

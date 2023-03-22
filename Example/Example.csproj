@@ -24,6 +24,7 @@
 		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="7.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="7.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Identity.Core" Version="7.0.1" />
+		<PackageReference Include="Rick.Docs.Samples.RouteInfo" Version="1.0.0.8" />
 		<PackageReference Include="System.Runtime.Caching" Version="7.0.0" />
 		<PackageReference Include="App.Metrics" Version="4.3.0" />
 		<PackageReference Include="App.Metrics.AspNetCore" Version="4.3.0" />
@@ -46,6 +47,16 @@
 
 	<ItemGroup>
 		<Protobuf Include="Generated\AutoGenService.proto" GeneGrpcServics="server" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="appsettings.Development.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<Content Include="appsettings.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<Content Include="secrets/**"></Content>
 	</ItemGroup>
 
 	<PropertyGroup>

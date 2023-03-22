@@ -4,8 +4,8 @@ namespace Sharara.EntityCodeGen.Core.Fields
     {
         public const string XmlTypeName = "date";
 
-        public DateTimeField(string name)
-            : base(FieldType.DateTime.Instance, name)
+        public DateTimeField(RecordEntity record, string name)
+            : base(record, FieldType.DateTime.Instance, name)
         {
         }
 

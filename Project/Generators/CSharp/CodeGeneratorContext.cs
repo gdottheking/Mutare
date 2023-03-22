@@ -83,7 +83,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 FieldType.Int64 x => Coerce(x.ClrType),
                 FieldType.Int32 x => Coerce(x.ClrType),
                 FieldType.String x => Coerce(x.ClrType),
-                FieldType.List x => $"IEnumerable<{MapToDotNetType(x.ItemType)}>",
+                FieldType.List x => $"List<{MapToDotNetType(x.ItemType)}>",
                 FieldType.Entity x => MapEntity(x.GetEntity()),
                 _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
             };

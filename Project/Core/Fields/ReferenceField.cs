@@ -4,8 +4,8 @@ namespace Sharara.EntityCodeGen.Core.Fields
     {
         public const string XmlTypeName = "ref";
 
-        public ReferenceField(FieldType.Entity entity, string name)
-            : base(entity, name)
+        public ReferenceField(RecordEntity record, FieldType.Entity entity, string name)
+            : base(record, entity, name)
         {
         }
 

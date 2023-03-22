@@ -219,7 +219,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                             using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
                             {
                                codeWriter.WriteLines(
-                                    $"{lhs} = {rhs}.Select(it => {converterClassName.ToCamelCase()}.Convert(it));"
+                                    $"{lhs} = {rhs}.Select(it => {converterClassName.ToCamelCase()}.Convert(it)).ToList();"
                                );
                             }
                         }

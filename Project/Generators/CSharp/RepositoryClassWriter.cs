@@ -140,7 +140,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     $"var items = dbContext.{proc.Record.Name}",
                     $"   .Skip(offset)",
                     $"   .Take((int) {countArg.Name})",
-                    "   .AsNoTracking();",
+                    "   .AsNoTracking()",
+                    "   .ToList();",
                     $"return await (new ValueTask<{retType}>(items));"
                 );
 

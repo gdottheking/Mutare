@@ -189,7 +189,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 var fte = (FieldType.Entity)(listField.FieldType.ItemType);
                 var ent = (EnumEntity) fte.GetEntity();
                 var type = context.MapToDotNetType(ent);
-                propType = $"IEnumerable<{type}>";
+                propType = $"List<{type}>";
             }
             else
             {

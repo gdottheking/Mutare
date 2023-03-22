@@ -36,6 +36,7 @@ namespace Sharara.EntityCodeGen
             words[0] = words[0].ToLower();
             return string.Join("", words);
         }
+
     }
 
 }

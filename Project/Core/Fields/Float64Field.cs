@@ -6,8 +6,8 @@ namespace Sharara.EntityCodeGen.Core.Fields
         public double MinValue { get; set; } = double.MinValue;
         public double MaxValue { get; set; } = double.MaxValue;
 
-        public Float64Field(string name)
-            : base(FieldType.Float64.Instance, name)
+        public Float64Field(RecordEntity record, string name)
+            : base(record, FieldType.Float64.Instance, name)
         {
         }
 
