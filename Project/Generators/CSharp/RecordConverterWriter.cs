@@ -27,9 +27,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         RecordEntity Record { get; set; }
 
-        protected override string ClassKeyword => "class";
-
-        protected override string OutputTypeName => context.MapToDotNetType(Record, RecordFile.Converter);
+        protected override string TargetTypeName => context.MapToDotNetType(Record, RecordFile.Converter);
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 

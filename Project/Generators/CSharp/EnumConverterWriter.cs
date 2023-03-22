@@ -27,9 +27,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         EnumEntity Enum { get; set; }
 
-        protected override string ClassKeyword => "class";
-
-        protected override string OutputTypeName => context.MapToDotNetType(Enum, EnumFile.Converter);
+        protected override string TargetTypeName => context.MapToDotNetType(Enum, EnumFile.Converter);
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 

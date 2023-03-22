@@ -1,32 +1,35 @@
-using Sharara.EntityCodeGen.Core.Fields;
 using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    class ServiceClassWriter : RepositoryInterfaceWriter
+    class ServiceClassWriter : ClassWriter
     {
+
         public ServiceClassWriter(Service service,
             CodeWriter codeWriter,
             CodeGeneratorContext context)
-            : base(service, codeWriter, context)
+            : base(codeWriter)
         {
             Imports.Add("using Grpc = global::Grpc.Core;");
             Imports.Add($"using Proto = global::{Common.ProtocOutputNamespace};");
             Imports.Add("using System.ComponentModel.DataAnnotations;");
+            this.Context = context;
+            this.Service = service;
         }
 
-        protected override string ClassKeyword => "class";
+        protected CodeGeneratorContext Context { get; }
 
-        protected override string OutputTypeName => context.ServiceClassName;
+        protected Service Service { get; }
 
-        protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
+        protected override string TargetTypeName => Context.ServiceClassName;
+
+        protected override string Namespace => Service.Schema.Configuration.CSharpNamespace;
 
         protected override string? Implements => $"Proto::{Common.GrpcServiceName}.{Common.GrpcServiceName}Base";
 
         protected override void WriteConstructor()
         {
-
-            codeWriter.WriteLine($"public {OutputTypeName}(IRepository repo)")
+            codeWriter.WriteLine($"public {TargetTypeName}(IRepository repo)")
                 .WriteLine("{")
                 .Indent()
                 .WriteLine("this.Repository = repo;")
@@ -38,7 +41,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine();
         }
 
-        protected override void WriteMethod(IProcedure proc)
+        protected override void WriteMethods()
+        {
+             Service.Procedures.ToList().ForEach(WriteMethod);
+        }
+
+        private void WriteMethod(IProcedure proc)
         {
             var outputNames = new ServiceProcClr(proc);
             switch (proc.ProcedureType)
@@ -116,8 +124,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         void WriteProcPut(IProcedure proc, ServiceProcClr outputNames)
         {
             OpenMethod(proc, outputNames);
-            var converterClassName = context.MapToDotNetType(proc.Record, RecordFile.Converter);
-            var entClassName = context.MapToDotNetType(proc.Record, RecordFile.Entity);
+            var converterClassName = Context.MapToDotNetType(proc.Record, RecordFile.Converter);
+            var entClassName = Context.MapToDotNetType(proc.Record, RecordFile.Entity);
             codeWriter.WriteLine($"var input = new {entClassName}();");
             codeWriter.WriteLines(
                     "",
@@ -145,7 +153,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         void WriteProcDelete(IProcedure proc, ServiceProcClr outputNames)
         {
-            string entityClassName = context.MapToDotNetType(proc.Record, RecordFile.Entity);
+            string entityClassName = Context.MapToDotNetType(proc.Record, RecordFile.Entity);
             OpenMethod(proc, outputNames);
 
             codeWriter.WriteLine("throw new NotImplementedException();");
@@ -159,15 +167,15 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             codeWriter.WriteLine($"const string DateFormatString = \"{Common.DateTimeFormatString}\";");
 
             HashSet<string> converterClassNames = new HashSet<string>();
-            foreach (var entity in service.Schema.Entities)
+            foreach (var entity in Service.Schema.Entities)
             {
                 if (entity.EntityType == Core.EntityType.Enum)
                 {
-                    converterClassNames.Add(context.MapToDotNetType((Core.EnumEntity)entity));
+                    converterClassNames.Add(Context.MapToDotNetType((Core.EnumEntity)entity, EnumFile.Converter));
                 }
                 else
                 {
-                    converterClassNames.Add(context.MapToDotNetType((Core.RecordEntity)entity));
+                    converterClassNames.Add(Context.MapToDotNetType((Core.RecordEntity)entity, RecordFile.Converter));
                 }
             }
 

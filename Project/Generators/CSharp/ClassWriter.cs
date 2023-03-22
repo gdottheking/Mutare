@@ -13,11 +13,17 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected virtual string? Implements => null;
 
-        protected virtual string ClassKeyword { get; } = "class";
+        protected enum CSharpTargetType {
+            Class,
+            Interface,
+            Enum
+        }
+
+        protected virtual CSharpTargetType TargetType { get; } = CSharpTargetType.Class;
 
         protected List<string> Imports { get; } = new List<string>();
 
-        protected abstract string OutputTypeName { get; }
+        protected abstract string TargetTypeName { get; }
 
         protected abstract string Namespace { get; }
 
@@ -73,7 +79,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected virtual void OpenClass()
         {
-            string output = $"public {ClassKeyword} {OutputTypeName}";
+            string output = $"public {TargetType.ToString().ToLower()} {TargetTypeName}";
             if (!string.IsNullOrWhiteSpace(Implements))
             {
                 output += $": {Implements}";

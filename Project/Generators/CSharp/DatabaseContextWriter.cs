@@ -19,7 +19,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             Imports.Add("using Microsoft.EntityFrameworkCore;");
         }
 
-        protected override string OutputTypeName => "DatabaseContext";
+        protected override string TargetTypeName => "DatabaseContext";
 
         protected override string Implements => "DbContext";
 
@@ -49,12 +49,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         protected override void WriteConstructor()
         {
             // Constructor
-            codeWriter.WriteLine($"public {OutputTypeName}([NotNullAttribute] DbContextOptions options)")
+            codeWriter.WriteLine($"public {TargetTypeName}([NotNullAttribute] DbContextOptions options)")
                 .Indent()
                 .WriteLine($": base(options) {{ }}")
                 .UnIndent()
                 .WriteLine()
-                .WriteLine($"public {OutputTypeName}()")
+                .WriteLine($"public {TargetTypeName}()")
                 .WriteLine("{")
                 .WriteLine("}");
         }

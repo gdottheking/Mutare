@@ -59,7 +59,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             return this;
         }
 
-        protected override string OutputTypeName => context.MapToDotNetType(record, RecordFile.Entity);
+        protected override string TargetTypeName => context.MapToDotNetType(record, RecordFile.Entity);
 
         protected override string Namespace => schema.Configuration.CSharpNamespace;
 

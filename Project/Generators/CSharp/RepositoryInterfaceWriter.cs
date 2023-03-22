@@ -1,13 +1,12 @@
-using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    class RepositoryInterfaceWriter : ClassWriter
+    sealed class RepositoryInterfaceWriter : ClassWriter
     {
-        protected readonly CodeGeneratorContext context;
+        private readonly CodeGeneratorContext context;
 
-        protected readonly Service service;
+        private readonly Service service;
 
         public RepositoryInterfaceWriter(Service service,
             CodeWriter codeWriter,
@@ -18,9 +17,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.context = context;
         }
 
-        protected override string ClassKeyword => "interface";
+        protected override CSharpTargetType TargetType => CSharpTargetType.Interface;
 
-        protected override string OutputTypeName => context.RepositoryInterfaceName;
+        protected override string TargetTypeName => context.RepositoryInterfaceName;
 
         protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
 
@@ -31,7 +30,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             service.Procedures.ToList().ForEach(WriteMethod);
         }
 
-        protected virtual void WriteMethod(IProcedure proc)
+        private void WriteMethod(IProcedure proc)
         {
             codeWriter.Write(context.ClrDeclString(proc))
                 .WriteLine(";")

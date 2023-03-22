@@ -3,23 +3,29 @@ using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    class RepositoryClassWriter : RepositoryInterfaceWriter
+    sealed class RepositoryClassWriter : ClassWriter
     {
         public RepositoryClassWriter(Service service,
             CodeWriter codeWriter,
             CodeGeneratorContext context)
-            : base(service, codeWriter, context)
+            : base(codeWriter)
         {
             Imports.Add("using Microsoft.EntityFrameworkCore;");
+            this.Service = service;
+            this.Context = context;
         }
 
-        protected override string ClassKeyword => "class";
+        CodeGeneratorContext Context { get; }
 
-        protected override string OutputTypeName => context.RepositoryClassName;
+        Service Service { get; }
 
-        protected override string Namespace => service.Schema.Configuration.CSharpNamespace;
+        protected override string TargetTypeName => Context.RepositoryClassName;
 
-        protected override string? Implements => context.RepositoryInterfaceName;
+        protected override CSharpTargetType TargetType => CSharpTargetType.Class;
+
+        protected override string Namespace => Service.Schema.Configuration.CSharpNamespace;
+
+        protected override string? Implements => Context.RepositoryInterfaceName;
 
         protected override void WriteBody()
         {
@@ -32,7 +38,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         protected override void WriteConstructor()
         {
-            codeWriter.WriteLine($"public {OutputTypeName}(DatabaseContext dbContext)")
+            codeWriter.WriteLine($"public {TargetTypeName}(DatabaseContext dbContext)")
                 .WriteLine("{")
                 .Indent()
                 .WriteLine("this.dbContext = dbContext;")
@@ -41,127 +47,121 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 .WriteLine();
         }
 
-        protected override void WriteMethod(IProcedure proc)
+        protected override void WriteMethods()
+        {
+            Service.Procedures.ToList().ForEach(WriteMethod);
+        }
+
+        private void WriteMethod(IProcedure proc)
         {
             switch (proc.ProcedureType)
             {
                 case OperationType.Count:
-                    WriteOpCount(proc);
+                    WriteCountProcedure(proc);
                     break;
 
                 case OperationType.Put:
-                    WriteOpPut(proc);
+                    WritePutProcedure(proc);
                     break;
 
                 case OperationType.Get:
-                    WriteOpGet(proc);
+                    WriteGetProcedure(proc);
                     break;
 
                 case OperationType.List:
-                    WriteOpList(proc);
+                    WriteListProcedure(proc);
                     break;
 
                 case OperationType.Delete:
-                    WriteOpDelete(proc);
+                    WriteDeleteProcedure(proc);
                     break;
 
                 default:
-                    OpenMethod(proc);
-                    codeWriter.WriteLine("throw new NotImplementedException();");
-                    CloseMethod();
+                    using (OpenMethod(proc))
+                    {
+                        codeWriter.WriteLine("throw new NotImplementedException();");
+                    }
                     break;
             }
         }
 
-        void OpenMethod(IProcedure proc)
+        IDisposable OpenMethod(IProcedure proc)
         {
-            string opSignature = context.ClrDeclString(proc);
-            codeWriter.WriteLine("public async " + opSignature)
-                .WriteLine("{")
-                .Indent();
+            string opSignature = Context.ClrDeclString(proc);
+            return codeWriter.CurlyBracketScope("public async " + opSignature);
         }
 
-        void CloseMethod()
+        void WriteCountProcedure(IProcedure proc)
         {
-            codeWriter.UnIndent()
-                .WriteLine("}")
-                .WriteLine();
+            using (OpenMethod(proc))
+            {
+                string opReturnType = Context.MapToDotNetType(proc.ReturnType);
+                codeWriter.WriteLines(
+                    $"var num = dbContext.{proc.Record.Name}.LongCount();",
+                    $"return await(new ValueTask<long>(num));"
+                );
+            }
         }
 
-        void WriteOpCount(IProcedure proc)
+        void WriteGetProcedure(IProcedure proc)
         {
-            OpenMethod(proc);
-
-            string opReturnType = context.MapToDotNetType(proc.ReturnType);
-
-            codeWriter.WriteLines(
-                $"var num = dbContext.{proc.Record.Name}.LongCount();",
-                $"return await(new ValueTask<long>(num));"
-            );
-
-            CloseMethod();
+            using (OpenMethod(proc))
+            {
+                var args = string.Join(", ", proc.Arguments.Select(x => x.Name));
+                codeWriter.WriteLine($"return await dbContext.{proc.Record.Name}.FindAsync({args});");
+            }
         }
 
-        void WriteOpGet(IProcedure proc)
+        void WritePutProcedure(IProcedure proc)
         {
-            OpenMethod(proc);
-
-            var args = string.Join(", ", proc.Arguments.Select(x => x.Name));
-            codeWriter.WriteLine($"return await dbContext.{proc.Record.Name}.FindAsync({args});");
-
-            CloseMethod();
+            using (OpenMethod(proc))
+            {
+                codeWriter.WriteLines(
+                    $"await dbContext.{proc.Record.Name}.AddAsync({proc.Arguments[0].Name});",
+                    "await dbContext.SaveChangesAsync();"
+                );
+            }
         }
 
-        void WriteOpPut(IProcedure proc)
-        {
-            OpenMethod(proc);
-
-            codeWriter.WriteLines(
-                $"await dbContext.{proc.Record.Name}.AddAsync({proc.Arguments[0].Name});",
-                "await dbContext.SaveChangesAsync();"
-            );
-
-            CloseMethod();
-        }
-
-        void WriteOpList(IProcedure proc)
+        void WriteListProcedure(IProcedure proc)
         {
             var args = proc.Arguments;
             var idxArg = args[args.Length - 2];
             var countArg = args[args.Length - 1];
-            OpenMethod(proc);
 
-            var retType = context.MapToDotNetType(proc.ReturnType);
+            using (OpenMethod(proc))
+            {
 
-            codeWriter.WriteLines(
-                $"{idxArg.Name} = Math.Max(0, {idxArg.Name});",
-                $"var offset = (int)({idxArg.Name} * {countArg.Name});",
-                $"var items = dbContext.{proc.Record.Name}",
-                $"   .Skip(offset)",
-                $"   .Take((int) {countArg.Name})",
-                "   .AsNoTracking();",
-                $"return await (new ValueTask<{retType}>(items));"
-            );
+                var retType = Context.MapToDotNetType(proc.ReturnType);
 
-            CloseMethod();
+                codeWriter.WriteLines(
+                    $"{idxArg.Name} = Math.Max(0, {idxArg.Name});",
+                    $"var offset = (int)({idxArg.Name} * {countArg.Name});",
+                    $"var items = dbContext.{proc.Record.Name}",
+                    $"   .Skip(offset)",
+                    $"   .Take((int) {countArg.Name})",
+                    "   .AsNoTracking();",
+                    $"return await (new ValueTask<{retType}>(items));"
+                );
+
+            }
         }
 
-        void WriteOpDelete(IProcedure proc)
+        void WriteDeleteProcedure(IProcedure proc)
         {
-            string entityClassName = context.MapToDotNetType(proc.Record, RecordFile.Entity);
-            OpenMethod(proc);
+            string entityClassName = Context.MapToDotNetType(proc.Record, RecordFile.Entity);
+            using (OpenMethod(proc))
+            {
+                var assigns = string.Join(", ",
+                    proc.Arguments.Select(x => $"{proc.Record[x.Name!]?.Name} = {x.Name}")
+                );
 
-            var assigns = string.Join(", ",
-                proc.Arguments.Select(x => $"{proc.Record[x.Name!]?.Name} = {x.Name}")
-            );
-
-            codeWriter.WriteLines(
-                $"var ety = new {entityClassName} {{ {assigns} }};",
-                $"dbContext.{proc.Record.Name}.Remove(ety);",
-                "await dbContext.SaveChangesAsync();"
-            );
-
-            CloseMethod();
+                codeWriter.WriteLines(
+                    $"var ety = new {entityClassName} {{ {assigns} }};",
+                    $"dbContext.{proc.Record.Name}.Remove(ety);",
+                    "await dbContext.SaveChangesAsync();"
+                );
+            }
         }
     }
 }

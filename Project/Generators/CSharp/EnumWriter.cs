@@ -16,11 +16,11 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.helper = helper;
         }
 
-        protected override string OutputTypeName => helper.MapToDotNetType(enumEntity, EnumFile.Enum);
+        protected override string TargetTypeName => helper.MapToDotNetType(enumEntity, EnumFile.Enum);
 
         protected override string Namespace => schema.Configuration.CSharpNamespace;
 
-        protected override string ClassKeyword => "enum";
+        protected override CSharpTargetType TargetType => CSharpTargetType.Enum;
 
         protected override string? Implements => null;
 
