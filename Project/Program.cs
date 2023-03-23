@@ -15,6 +15,15 @@ namespace Sharara.EntityCodeGen
         {
             Console.WriteLine("Loading schema");
             var schema = (new SchemaLoader()).ReadDocument("example.xml");
+            var converter = new SchemaToClrConverter();
+            foreach (var rec in converter.Convert(schema))
+            {
+                Console.WriteLine(rec);
+                Console.WriteLine();
+            }
+
+            //return;
+
             var service = new Service(schema);
 
             CleanOutputFolder();

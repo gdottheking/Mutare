@@ -1,13 +1,15 @@
+using Sharara.EntityCodeGen.Core.Fields.Types;
+
 namespace Sharara.EntityCodeGen.Core.Fields
 {
-    class Field
+    record class Field
     {
-        internal RecordEntity Record { get; }
-        internal FieldType FieldType { get; }
-
+        public RecordEntity Record { get; }
+        public FieldType FieldType { get; }
         public string Name { get; set; }
         public bool IsRequired { get; set; }
         public bool IsKey { get; set; }
+        public bool IsNullable => !IsKey && !IsRequired;
         public bool CheckOnUpdate { get; set; }
         public int ProtoId { get; set; }
 
@@ -27,5 +29,20 @@ namespace Sharara.EntityCodeGen.Core.Fields
         {
             return (IsRequired ? "*" : "") + $"{Name}:{FieldType}";
         }
+
+        public static FieldType int32Type() => FieldType.Int32.Instance;
+
+        public static FieldType int64Type() => FieldType.Int64.Instance;
+
+        public static FieldType float64Type() => FieldType.Float64.Instance;
+
+        public static FieldType stringType() => FieldType.String.Instance;
+
+        public static FieldType dateTimeType() => FieldType.DateTime.Instance;
+
+        public static FieldType entityType(Entity e) => new FieldType.Entity(e);
+
+        public static FieldType listType(FieldType itemType) => new FieldType.List(itemType);
+
     }
 }

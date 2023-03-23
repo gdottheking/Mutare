@@ -1,11 +1,13 @@
+using Sharara.EntityCodeGen.Core.Fields.Types;
+
 namespace Sharara.EntityCodeGen.Core.Fields
 {
-    class ListField : Field
+    record class ListField : Field
     {
         public const string XmlTypeName = "list";
 
         public ListField(RecordEntity record, FieldType itemType, string name)
-            : base(record, new FieldType.List(itemType), name)
+            : base(record, listType(itemType), name)
         {
         }
 

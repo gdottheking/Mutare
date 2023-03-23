@@ -7,6 +7,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
     {
         private CodeGeneratorContext context;
         private Service service;
+        private SchemaToClrConverter converter = new SchemaToClrConverter();
 
         public Generator(Service service, CodeGeneratorContext codeWriterProvider)
         {
@@ -22,11 +23,15 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         public void GenerateEntities()
         {
+            foreach (var record in converter.Convert(service.Schema))
+            {
+                GenerateEntity(record);
+            }
+
             foreach (var entity in service.Schema.Entities)
             {
                 if (entity is RecordEntity r)
                 {
-                    GenerateEntity(r);
                     GenerateConverter(r);
                 }
                 else if (entity is EnumEntity e)
@@ -36,12 +41,13 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                     // GenerateEntity(e.BackingRecord__Hack());
                 }
             }
+
         }
 
-        void GenerateEntity(RecordEntity record)
+        void GenerateEntity(ClrRecord record)
         {
-            var writer1 = context.GetWriter(record, RecordFile.Entity);
-            var gen1 = new EntityClassWriter(record, service.Schema, writer1, context);
+            var writer1 = context.GetWriter(record.Source, RecordFile.Entity);
+            var gen1 = new RecordClassWriter(record, service.Schema, writer1, context);
             gen1.Generate();
         }
 

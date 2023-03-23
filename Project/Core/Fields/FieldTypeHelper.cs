@@ -1,3 +1,5 @@
+using Sharara.EntityCodeGen.Core.Fields.Types;
+
 namespace Sharara.EntityCodeGen.Core.Fields
 {
     static class FieldTypeHelper

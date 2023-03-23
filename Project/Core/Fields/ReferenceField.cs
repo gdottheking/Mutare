@@ -1,6 +1,8 @@
+using Sharara.EntityCodeGen.Core.Fields.Types;
+
 namespace Sharara.EntityCodeGen.Core.Fields
 {
-    class ReferenceField : Field
+    record class ReferenceField : Field
     {
         public const string XmlTypeName = "ref";
 

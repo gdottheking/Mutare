@@ -1,6 +1,7 @@
 ﻿using System.Xml;
 using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Fields.Types;
 
 namespace Sharara.EntityCodeGen
 {

@@ -11,7 +11,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
         ToLower = 8
     }
 
-    class StringField : Field
+    record class StringField : Field
     {
         public const string XmlTypeName = "str";
         public int? MinLength { get; set; }
@@ -19,7 +19,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
         public string? RegexPattern { get; set; }
         public StringTransform Transforms { get; set; } = StringTransform.Trim;
         public StringField(RecordEntity record, string name)
-            : base(record, FieldType.String.Instance, name)
+            : base(record, stringType(), name)
         {
         }
 

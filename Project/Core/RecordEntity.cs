@@ -28,24 +28,22 @@ namespace Sharara.EntityCodeGen.Core
         public ICollection<ShadowField> ShadowFields()
         {
             // Get all reference fields which point to a Record
-            var relationFields = Fields.Where(f => f is ReferenceField rf &&
+            var pointerFields = Fields.Where(f => f is ReferenceField rf &&
                     rf.FieldType.GetEntity().EntityType == EntityType.Record)
                     .Cast<ReferenceField>();
 
             List<ShadowField> shadowFields = new List<ShadowField>();
 
             // Create a shadow field for each Key on the relation
-            foreach (var recField in relationFields)
+            foreach (var pointerField in pointerFields)
             {
-                var otherRecord = (RecordEntity)recField.FieldType.GetEntity();
-                foreach (var pkField in otherRecord.GetKeyFields())
+                var targetRecord = (RecordEntity)pointerField.FieldType.GetEntity();
+                foreach (var targetRecPkField in targetRecord.GetKeyFields())
                 {
-                    var y = new FieldOwnership(otherRecord, pkField);
-                    var shadow = new ShadowField(recField, y);
+                    var shadow = new ShadowField(pointerField, targetRecPkField);
                     shadowFields.Add(shadow);
                 }
             }
-
             return shadowFields;
         }
 
@@ -61,20 +59,24 @@ namespace Sharara.EntityCodeGen.Core
                 }
             }
 
-            // Duplicates will throw
+            // Validate that field names are unique
             try
             {
-                Fields.ToDictionary(v => v.Name, v => v);
+                var dict = Fields.ToDictionary(field => field.Name, field => field.Name);
+                foreach (var shadow in ShadowFields())
+                {
+                    dict.Add(shadow.Name, shadow.Name);
+                }
             }
             catch (ArgumentException e)
             {
-                throw new ArgumentException($"Entity {Name}. Field has duplicate name {e.Message}");
+                throw new ArgumentException($"Entity {Name}. Field has duplicate field names {e.Message}");
             }
 
+            // Validate that protobuf ids are unique
             try
             {
-                Fields.ToDictionary(v => v.Name, v => v);
-                Fields.ToDictionary(v => v.ProtoId, v => v);
+                Fields.ToDictionary(field => field.ProtoId, field => field.ProtoId);
             }
             catch (ArgumentException e)
             {
@@ -83,17 +85,4 @@ namespace Sharara.EntityCodeGen.Core
         }
     }
 
-    record FieldOwnership(RecordEntity Owner, Field Field)
-    {
-        public override string ToString()
-        {
-            return $"{Owner.Name}.{Field.Name}";
-        }
-    }
-
-    record ShadowField(Field Field, FieldOwnership Target)
-    {
-        public string Name => Field.Name + Target.Field.Name;
-        public override string ToString() => Name;
-    }
 }

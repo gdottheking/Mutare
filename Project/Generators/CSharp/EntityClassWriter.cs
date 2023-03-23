@@ -1,16 +1,18 @@
 using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Fields.Types;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
-    internal class EntityClassWriter : ClassWriter, IFieldVisitor
+    internal class RecordClassWriter : ClassWriter
     {
         private Schema schema;
         private CodeGeneratorContext context;
-        private readonly RecordEntity record;
+        private readonly ClrRecord record;
         private readonly ValidationWriter validationWriter;
+        private readonly ClrTypeMapper typeMapper = new ClrTypeMapper();
 
-        public EntityClassWriter(RecordEntity record,
+        public RecordClassWriter(ClrRecord record,
             Schema definition,
             CodeWriter codeWriter,
             CodeGeneratorContext context)
@@ -26,25 +28,25 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             this.Imports.Add("using System.Text.RegularExpressions;");
         }
 
-        protected EntityClassWriter Indent()
+        protected RecordClassWriter Indent()
         {
             codeWriter.Indent();
             return this;
         }
 
-        protected EntityClassWriter UnIndent()
+        protected RecordClassWriter UnIndent()
         {
             codeWriter.UnIndent();
             return this;
         }
 
-        protected EntityClassWriter WriteLines(params string[] lines)
+        protected RecordClassWriter WriteLines(params string[] lines)
         {
             codeWriter.WriteLines(lines);
             return this;
         }
 
-        protected EntityClassWriter WriteLine(int count = 1)
+        protected RecordClassWriter WriteLine(int count = 1)
         {
             for (int i = 0; i < count; i++)
             {
@@ -53,13 +55,13 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             return this;
         }
 
-        protected EntityClassWriter WriteLine(string line)
+        protected RecordClassWriter WriteLine(string line)
         {
             codeWriter.WriteLine(line);
             return this;
         }
 
-        protected override string TargetTypeName => context.MapToDotNetType(record, RecordFile.Entity);
+        protected override string TargetTypeName => record.ClassName;
 
         protected override string Namespace => schema.Configuration.CSharpNamespace;
 
@@ -78,11 +80,25 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             validationWriter.WriteFields();
             WriteLine();
 
-            foreach (var field in record.Fields.OrderBy(f => f.Name))
+            foreach (var prop in record.Properties.OrderBy(prop => prop.Name))
             {
-                field.Accept(this);
+                WriteProp(prop);
                 WriteLine();
             }
+        }
+
+        private void WriteProp(IClrProperty prop)
+        {
+            if (prop is ClrProperty standardProp)
+            {
+                WriteFieldAnnotations(standardProp.Source);
+            }
+            else if (prop is ClrShadowProperty shadowProperty)
+            {
+                WriteFieldAnnotations(shadowProperty.ShadowField.Pointer);
+            }
+
+            WriteLine($"public {prop.ClrType} {prop.Name} {{get; set;}}");
         }
 
         protected override void WriteMethods()
@@ -113,106 +129,35 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             }
         }
 
-        private void WriteClassProperty(Field field, string clrType, string? overrideName = null)
-        {
-            string propName = !string.IsNullOrWhiteSpace(overrideName) ? overrideName : field.Name;
-            WriteFieldAnnotations(field);
-            WriteLine($"public {clrType} {propName} {{get; set;}}");
-        }
-
-        void WriteClrField(Field field)
-        {
-            WriteClassProperty(field, context.MapToDotNetType(field));
-        }
-
-        public void VisitStringField(StringField field)
-        {
-            WriteClrField(field);
-        }
-
-        public void VisitInt64Field(Int64Field field)
-        {
-            WriteClrField(field);
-        }
-
-        public void VisitInt32Field(Int32Field field)
-        {
-            WriteClrField(field);
-        }
-
-        public void VisitFloat64Field(Float64Field field)
-        {
-            WriteClrField(field);
-        }
-
-        public void VisitDateTimeField(DateTimeField field)
-        {
-            WriteClrField(field);
-        }
-
-        public void VisitReferenceField(ReferenceField field)
-        {
-            Entity refEntity = context.GetEntity(field.FieldType);
-            Console.WriteLine($"Writing {field.Name}");
-
-            if (refEntity.EntityType == EntityType.Record)
-            {
-                RecordEntity targetRec = (RecordEntity)refEntity;
-                // Write shadow fields
-                var shadowFields = this.record.ShadowFields();
-                foreach (var shadow in shadowFields)
-                {
-                    if (shadow.Target.Owner == targetRec)
-                    {
-                        string targetClrType = context.MapToDotNetType(shadow.Target.Field.FieldType, true);
-                        WriteLine($"public {targetClrType} {shadow.Name} {{get; set;}}");
-                    }
-
-                    // Write
-                    string refTypeName = context.MapToDotNetType(targetRec, RecordFile.Entity);
-                    WriteClassProperty(field, refTypeName);
-                }
-            }
-            else if (refEntity.EntityType == EntityType.Enum)
-            {
-                EnumEntity refEnum = (EnumEntity)refEntity;
-                string enumName = context.MapToDotNetType(refEnum, EnumFile.Enum);
-                WriteClassProperty(field, enumName);
-            }
-        }
-
-        public void VisitListField(ListField listField)
-        {
-            string propType;
-            if (listField.FieldType.IsEnumOrListOfEnums())
-            {
-                var fte = (FieldType.Entity)(listField.FieldType.ItemType);
-                var ent = (EnumEntity) fte.GetEntity();
-                var type = context.MapToDotNetType(ent);
-                propType = $"List<{type}>";
-            }
-            else
-            {
-                propType = context.MapToDotNetType(listField.FieldType);
-            }
-
-            WriteClassProperty(listField, propType);
-        }
-
         class ValidationWriter : IFieldVisitor
         {
-            private readonly EntityClassWriter parent;
+            private readonly RecordClassWriter parent;
 
-            public ValidationWriter(EntityClassWriter parent)
+            public ValidationWriter(RecordClassWriter parent)
             {
                 this.parent = parent;
             }
 
+            Field FieldFromProp(IClrProperty prop)
+            {
+                if (prop is ClrProperty standard)
+                {
+                    return standard.Source;
+                }
+                else if (prop is ClrShadowProperty shadow)
+                {
+                    // TODO Hacky hack!
+                    return shadow.ShadowField.Target with { Name = prop.Name, IsRequired = !prop.DefaultsToNull };
+                }
+                throw new NotImplementedException();
+            }
+
+
             public void WriteMethods()
             {
-                foreach (var field in parent.record.Fields)
+                foreach (var prop in parent.record.Properties)
                 {
-                    field.Accept(this);
+                    FieldFromProp(prop).Accept(this);
                 }
 
                 var methodDecl = "public IEnumerable<ValidationResult> "
@@ -222,9 +167,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 {
                     parent.WriteLine("var result = new List<ValidationResult>();");
 
-                    foreach (var field in parent.record.Fields)
+                    foreach (var prop in parent.record.Properties)
                     {
-                        parent.WriteLine($"result.AddRange(Validate{field.Name}(validationContext));");
+                        parent.WriteLine($"result.AddRange(Validate{prop.Name}(validationContext));");
                     }
 
                     parent.WriteLine("return result;");
@@ -233,8 +178,9 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
             public void WriteFields()
             {
-                foreach (var field in parent.record.Fields)
+                foreach (var prop in parent.record.Properties)
                 {
+                    var field = FieldFromProp(prop);
                     if (field is StringField strf)
                     {
                         if (strf.MinLength.HasValue)

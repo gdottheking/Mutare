@@ -1,5 +1,6 @@
 using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Fields.Types;
 using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
@@ -8,6 +9,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
     {
         private Service service;
         private CodeGeneratorContext context;
+        private readonly ClrTypeMapper typeMapper = new ClrTypeMapper();
 
         public RecordConverterWriter(RecordEntity record,
             Service service,
@@ -145,7 +147,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                         {
                             if (lf.FieldType.ItemType.IsSimpleAssignable())
                             {
-                                string itemClrType = context.MapToDotNetType(lf.FieldType.ItemType);
+                                string itemClrType = typeMapper.MapToDotNetType(lf.FieldType.ItemType);
                                 codeWriter.WriteLine($"{lhs}.AddRange({rhs});");
                             }
                             else if (lf.FieldType.ItemType is FieldType.Entity ftEnt)
@@ -209,7 +211,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                         {
                             using (codeWriter.CurlyBracketScope($"if (null != {rhs})"))
                             {
-                                string clrType = context.MapToDotNetType(lf.FieldType.ItemType);
+                                string clrType = typeMapper.MapToDotNetType(lf.FieldType.ItemType);
                                 codeWriter.WriteLine($"{lhs} = new List<{clrType}>({rhs});");
                             }
                         }

@@ -5,6 +5,8 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 {
     sealed class RepositoryClassWriter : ClassWriter
     {
+        private readonly ClrTypeMapper typeMapper = new ClrTypeMapper();
+
         public RepositoryClassWriter(Service service,
             CodeWriter codeWriter,
             CodeGeneratorContext context)
@@ -95,7 +97,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
         {
             using (OpenMethod(proc))
             {
-                string opReturnType = Context.MapToDotNetType(proc.ReturnType);
+                string opReturnType = typeMapper.MapToDotNetType(proc.ReturnType);
                 codeWriter.WriteLines(
                     $"var num = dbContext.{proc.Record.Name}.LongCount();",
                     $"return await(new ValueTask<long>(num));"
@@ -132,7 +134,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             using (OpenMethod(proc))
             {
 
-                var retType = Context.MapToDotNetType(proc.ReturnType);
+                var retType = typeMapper.MapToDotNetType(proc.ReturnType);
 
                 codeWriter.WriteLines(
                     $"{idxArg.Name} = Math.Max(0, {idxArg.Name});",

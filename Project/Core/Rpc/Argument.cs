@@ -1,4 +1,4 @@
-using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Fields.Types;
 
 namespace Sharara.EntityCodeGen.Core.Rpc
 {

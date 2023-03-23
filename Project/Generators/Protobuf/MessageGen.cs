@@ -1,5 +1,6 @@
 using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Fields.Types;
 using Sharara.EntityCodeGen.Core.Rpc;
 using Sharara.EntityCodeGen.Generators.CSharp;
 

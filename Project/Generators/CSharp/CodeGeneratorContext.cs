@@ -1,11 +1,15 @@
 using Sharara.EntityCodeGen.Core;
 using Sharara.EntityCodeGen.Core.Fields;
+using Sharara.EntityCodeGen.Core.Fields.Types;
 using Sharara.EntityCodeGen.Core.Rpc;
 
 namespace Sharara.EntityCodeGen.Generators.CSharp
 {
     internal partial class CodeGeneratorContext
     {
+
+        private readonly ClrTypeMapper typeMapper = new ClrTypeMapper();
+
         public CodeGeneratorContext(string outputFolder)
         {
             OutputFolder = outputFolder;
@@ -58,56 +62,10 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             };
         }
 
-        public string MapToDotNetType(FieldType fieldType, bool forceNullable = false)
-        {
-            Func<string, string> Coerce = (clrType) => forceNullable ? clrType += "?" : clrType;
-
-            Func<Entity, string> MapEntity =  entity =>
-            {
-                if (entity.EntityType == EntityType.Record)
-                {
-                    return MapToDotNetType((RecordEntity)entity);
-                }
-                else if (entity.EntityType == EntityType.Enum)
-                {
-                    return MapToDotNetType((EnumEntity)entity);
-                }
-                throw new InvalidOperationException("Unexpected entity type");
-            };
-
-            return fieldType switch
-            {
-                FieldType.Void x => x.ClrType,
-                FieldType.DateTime x => Coerce(x.ClrType),
-                FieldType.Float64 x => Coerce(x.ClrType),
-                FieldType.Int64 x => Coerce(x.ClrType),
-                FieldType.Int32 x => Coerce(x.ClrType),
-                FieldType.String x => Coerce(x.ClrType),
-                FieldType.List x => $"List<{MapToDotNetType(x.ItemType)}>",
-                FieldType.Entity x => MapEntity(x.GetEntity()),
-                _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
-            };
-        }
-
-        public string MapToDotNetType(Field field)
-        {
-            // When a property is not mandatory,
-            // and of type int, long, float, double, DateTime
-            // We convert the field to its Nullable<?> version
-            var clrType = MapToDotNetType(field.FieldType);
-            if ((field.FieldType.IsNumericPrimitive() ||
-                 field.FieldType is FieldType.DateTime) &&
-                 !field.IsMandatory())
-            {
-                clrType += "?";
-            }
-            return clrType;
-        }
-
         public string ClrDeclString(IProcedure proc)
         {
             string @params = string.Join(", ", proc.Arguments.Select(ClrDeclString));
-            string returnType = MapToDotNetType(proc.ReturnType);
+            string returnType = typeMapper.MapToDotNetType(proc.ReturnType);
             returnType = returnType.Equals("void") ? "Task" : $"Task<{returnType}>";
 
             // HACK: ClrDeclString isn't only called by service Generator
@@ -119,7 +77,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
         public string ClrDeclString(Argument arg)
         {
-            string typeName = MapToDotNetType(arg.Type);
+            string typeName = typeMapper.MapToDotNetType(arg.Type);
             return $"{typeName} {arg.Name}";
         }
 
@@ -135,6 +93,83 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             }
             throw new InvalidOperationException();
 
+        }
+    }
+
+    class ClrTypeMapper
+    {
+
+        public string NameOfEntity(RecordEntity record)
+        {
+            return record.Name + "Entity";
+        }
+
+        public string NameOfEnum(EnumEntity enumEntity)
+        {
+            return enumEntity.Name + "Enum";
+        }
+
+        [Obsolete]
+        public string MapToDotNetType(FieldType fieldType, bool forceNullable = false)
+        {
+            TypeInfo typeInfo = ClrNetTypeInfoOf(fieldType);
+            if (typeInfo.DefaultsToSomeZero && forceNullable)
+            {
+                return typeInfo.AsText + "?";
+            }
+            return typeInfo.AsText;
+        }
+
+        public TypeInfo ClrNetTypeInfoOf(FieldType fieldType)
+        {
+            Func<Entity, TypeInfo> MapEntity = entity =>
+            {
+                if (entity.EntityType == EntityType.Record)
+                {
+                    return new(fieldType, NameOfEntity((RecordEntity)entity), false, false, false);
+                }
+                else if (entity.EntityType == EntityType.Enum)
+                {
+                    return new(fieldType, NameOfEnum((EnumEntity)entity), true, false, false);
+                }
+                throw new InvalidOperationException("Unexpected entity type");
+            };
+
+            return fieldType switch
+            {
+                FieldType.Void x => new(fieldType, x.ClrType, false, false, false),
+                FieldType.DateTime x => new(fieldType, x.ClrType, true, false, false),
+                FieldType.Float64 x => new(fieldType, x.ClrType, true, false, false),
+                FieldType.Int64 x => new(fieldType, x.ClrType, true, false, false),
+                FieldType.Int32 x => new(fieldType, x.ClrType, true, false, false),
+                FieldType.String x => new(fieldType, x.ClrType, false, false, false),
+                FieldType.List x => new(fieldType, $"List<{ClrNetTypeInfoOf(x.ItemType).AsText}>", false, false, true),
+                FieldType.Entity x => MapEntity(x.GetEntity()),
+                _ => throw new NotImplementedException($"FieldType {fieldType} does not have a matching clrType")
+            };
+        }
+
+        public record TypeInfo(FieldType FieldType, string AsText, bool DefaultsToSomeZero, bool IsClrSystemNullable, bool IsList);
+
+        public TypeInfo ClrNetTypeInfoOf(FieldType fieldType, bool isMandatory)
+        {
+            TypeInfo typeInfo = ClrNetTypeInfoOf(fieldType);
+            if (typeInfo.DefaultsToSomeZero && !isMandatory)
+            {
+                // When a property is not mandatory,
+                // and of type int, long, float, double, DateTime
+                // We convert the field to its System.Nullable<?> version
+                return new TypeInfo(fieldType, typeInfo.AsText + "?", false, true, false);
+            }
+
+            return typeInfo;
+
+        }
+
+        [Obsolete]
+        public string ClrTypeOf(Field field)
+        {
+            return ClrNetTypeInfoOf(field.FieldType, field.IsMandatory()).AsText;
         }
     }
 }
