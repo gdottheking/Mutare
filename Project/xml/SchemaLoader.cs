@@ -27,7 +27,7 @@ namespace Sharara.EntityCodeGen
             // Loop through each child element
             if (root == null)
             {
-                throw new InvalidOperationException("Xml document root is null");
+                throw new SchemaException("Xml document root is null");
             }
 
             return Load(root);
@@ -35,8 +35,8 @@ namespace Sharara.EntityCodeGen
 
         public Schema Load(XmlElement root)
         {
-            var cSharpNamespace = MustGetString(root, "csharp:namespace");
-            var protoPackageName = MustGetString(root, "pb:package");
+            var cSharpNamespace = GetOrThrowString(root, "csharp:namespace");
+            var protoPackageName = GetOrThrowString(root, "pb:package");
             var records = new List<RecordEntity>();
             var enums = new List<EnumEntity>();
             foreach (XmlNode node in root.ChildNodes)
@@ -58,11 +58,18 @@ namespace Sharara.EntityCodeGen
                         break;
 
                     default:
-                        throw new InvalidDataException($"Unknown element: <{element.Name}> with parent :root");
+                        throw new SchemaException($"Unknown element: <{element.Name}> with parent :root");
                 }
             }
 
-            ResolveReferences(records, enums);
+            try
+            {
+                ResolveReferences(records, enums);
+            }
+            catch (Exception e)
+            {
+                throw new SchemaException("Failed to resolve some references", e);
+            }
             var schemaConfig = new SchemaConfig(cSharpNamespace, protoPackageName);
             var schema = new Schema(schemaConfig, records, enums);
             schema.Validate();
@@ -80,25 +87,30 @@ namespace Sharara.EntityCodeGen
                 ArgumentNullException.ThrowIfNull(nameRef.UnresolvedEntityName);
                 if (!entityById.ContainsKey(nameRef.UnresolvedEntityName))
                 {
-                    throw new InvalidOperationException($"Entity {nameRef.UnresolvedEntityName} not found");
+                    throw new SchemaException($"Entity {nameRef.UnresolvedEntityName} not found");
                 }
-                nameRef.ResolveTo(entityById[nameRef.UnresolvedEntityName]);
+                var targetEntity = entityById[nameRef.UnresolvedEntityName];
+                nameRef.ResolveTo(targetEntity);
             };
 
-            foreach (var rec in records)
+            foreach (var record in records)
             {
-                foreach (var field in rec.Fields)
+                for (int i = record.Fields.Count - 1; i > -1; i--)
                 {
-                    if (field.FieldType is FieldType.Entity nameRef1 &&
-                        !nameRef1.HasEntity)
+                    Field? field = record.Fields[i];
+                    if (field.FieldType is FieldType.Entity nameRef && !nameRef.ResolvesToEntity)
                     {
-                        resolve(nameRef1);
+                        resolve(nameRef);
                     }
-                    else if (field.FieldType is FieldType.List listf &&
-                        listf.ItemType is FieldType.Entity nameRef2 &&
-                        !nameRef2.HasEntity)
+                    else if (field.FieldType is FieldType.List listFieldType &&
+                        listFieldType.ItemType is FieldType.Entity itemNameRef &&
+                        !itemNameRef.ResolvesToEntity)
                     {
-                        resolve(nameRef2);
+                        resolve(itemNameRef);
+                        if (itemNameRef.GetEntity() is RecordEntity targetRecord)
+                        {
+                            targetRecord.IncomingPointers.Add((ListField)field);
+                        }
                     }
                 }
             }
@@ -123,7 +135,7 @@ namespace Sharara.EntityCodeGen
                         break;
 
                     default:
-                        throw new InvalidDataException($"Unknown element: <{element.Name}> with parent :root");
+                        throw new SchemaException($"Unknown element: <{element.Name}> with parent :root");
                 }
             }
             return recordById;
@@ -148,7 +160,7 @@ namespace Sharara.EntityCodeGen
                         break;
 
                     default:
-                        throw new InvalidDataException($"Unknown element: <{element.Name}> with parent :root");
+                        throw new SchemaException($"Unknown element: <{element.Name}> with parent :root");
                 }
             }
             return enumById;

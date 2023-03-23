@@ -8,8 +8,8 @@ namespace Sharara.EntityCodeGen
     {
         public EnumEntity Load(XmlElement entityXmlElement)
         {
-            var enumName = MustGetString(entityXmlElement, NameAttribute);
-            var pluralName = MustGetString(entityXmlElement, PluralAttribute);
+            var enumName = GetOrThrowString(entityXmlElement, NameAttribute);
+            var pluralName = GetOrThrowString(entityXmlElement, PluralAttribute);
             EnumEntity entity = new EnumEntity(enumName, pluralName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
@@ -37,8 +37,8 @@ namespace Sharara.EntityCodeGen
         private EnumValue ReadEnumValue(XmlElement el)
         {
             var ev = new EnumValue();
-            ev.Name = MustGetString(el, NameAttribute);
-            ev.Value = MustGetInt(el);
+            ev.Name = GetOrThrowString(el, NameAttribute);
+            ev.Value = GetOrThrowInt32(el);
             return ev;
         }
     }

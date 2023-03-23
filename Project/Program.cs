@@ -22,8 +22,6 @@ namespace Sharara.EntityCodeGen
                 Console.WriteLine();
             }
 
-            //return;
-
             var service = new Service(schema);
 
             CleanOutputFolder();

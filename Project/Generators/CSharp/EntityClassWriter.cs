@@ -95,7 +95,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             }
             else if (prop is ClrShadowProperty shadowProperty)
             {
-                WriteFieldAnnotations(shadowProperty.ShadowField.Pointer);
+                WriteFieldAnnotations(shadowProperty.Source.Pointer);
             }
 
             WriteLine($"public {prop.ClrType} {prop.Name} {{get; set;}}");
@@ -118,7 +118,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 WriteLine($"[Key]");
             }
 
-            if (field.IsRequired)
+            if (field.IsRequiredOnCreate)
             {
                 WriteLine($"[Required]");
             }
@@ -138,26 +138,12 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 this.parent = parent;
             }
 
-            Field FieldFromProp(IClrProperty prop)
-            {
-                if (prop is ClrProperty standard)
-                {
-                    return standard.Source;
-                }
-                else if (prop is ClrShadowProperty shadow)
-                {
-                    // TODO Hacky hack!
-                    return shadow.ShadowField.Target with { Name = prop.Name, IsRequired = !prop.DefaultsToNull };
-                }
-                throw new NotImplementedException();
-            }
-
 
             public void WriteMethods()
             {
                 foreach (var prop in parent.record.Properties)
                 {
-                    FieldFromProp(prop).Accept(this);
+                    ClrRecord.GetOutputField(prop).Accept(this);
                 }
 
                 var methodDecl = "public IEnumerable<ValidationResult> "
@@ -180,7 +166,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             {
                 foreach (var prop in parent.record.Properties)
                 {
-                    var field = FieldFromProp(prop);
+                    var field = ClrRecord.GetOutputField(prop);
                     if (field is StringField strf)
                     {
                         if (strf.MinLength.HasValue)
@@ -220,7 +206,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
                 parent.WriteLine("var result = new List<ValidationResult>();");
 
-                if (strf.IsRequired)
+                if (strf.IsRequiredOnCreate)
                 {
                     var test = $"null == {strf.Name}";
                     using (parent.IfStat(test))

@@ -36,7 +36,7 @@ namespace Sharara.EntityCodeGen.Core.Rpc
 
         private void AddProcedures(RecordEntity record)
         {
-            var pkArgs = record.GetKeyFields().Select(
+            var pkArgs = record.PrimaryKeys().Select(
                 k => new Argument(k.FieldType, k.Name.ToCamelCase())
             ).ToArray();
 

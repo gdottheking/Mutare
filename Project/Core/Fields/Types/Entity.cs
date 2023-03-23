@@ -19,7 +19,7 @@ namespace Sharara.EntityCodeGen.Core.Fields.Types
 
             public string? UnresolvedEntityName => unresolvedEntityName;
 
-            public bool HasEntity => resolvedEntity != null;
+            public bool ResolvesToEntity => resolvedEntity != null;
 
             public Core.Entity GetEntity()
             {

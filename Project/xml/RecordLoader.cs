@@ -9,8 +9,8 @@ namespace Sharara.EntityCodeGen
     {
         public RecordEntity Load(XmlElement entityXmlElement)
         {
-            var recName = MustGetString(entityXmlElement, NameAttribute);
-            var recPluralName = MustGetString(entityXmlElement, PluralAttribute);
+            var recName = GetOrThrowString(entityXmlElement, NameAttribute);
+            var recPluralName = GetOrThrowString(entityXmlElement, PluralAttribute);
             RecordEntity record = new RecordEntity(recName, recPluralName);
 
             foreach (XmlNode child in entityXmlElement.ChildNodes)
@@ -87,8 +87,8 @@ namespace Sharara.EntityCodeGen
 
         private void ReadCommonFieldAttributes(Field field, XmlElement el)
         {
-            field.ProtoId = MustGetInt(el, ProtoIdAttribute);
-            field.IsRequired = GetBool(el, RequiredAttribute);
+            field.ProtoId = GetOrThrowInt32(el, ProtoIdAttribute);
+            field.IsRequiredOnCreate = GetBool(el, RequiredAttribute);
             field.IsKey = GetBool(el, KeyAttribute);
             field.CheckOnUpdate = GetBool(el, CheckOnUpdateAttribute);
         }
@@ -101,8 +101,8 @@ namespace Sharara.EntityCodeGen
         private Float64Field ReadFloat64Field(RecordEntity record, XmlElement el)
         {
             var field = (Float64Field)CreateField(record, el);
-            OptGetFloat64(el, MinValueAttribute, x => field.MinValue = x);
-            OptGetFloat64(el, MaxValueAttribute, x => field.MaxValue = x);
+            GetOptionalFloat64(el, MinValueAttribute, x => field.MinValue = x);
+            GetOptionalFloat64(el, MaxValueAttribute, x => field.MaxValue = x);
             return field;
         }
 
@@ -114,26 +114,26 @@ namespace Sharara.EntityCodeGen
         private Int64Field ReadInt64Field(RecordEntity record, XmlElement el)
         {
             var field = (Int64Field)CreateField(record, el);
-            OptGetInt64(el, MinValueAttribute, x => field.MinValue = x);
-            OptGetInt64(el, MaxValueAttribute, x => field.MaxValue = x);
+            GetOptionalInt64(el, MinValueAttribute, x => field.MinValue = x);
+            GetOptionalInt64(el, MaxValueAttribute, x => field.MaxValue = x);
             return field;
         }
 
         private Int32Field ReadInt32Field(RecordEntity record, XmlElement el)
         {
             var field = (Int32Field)CreateField(record, el);
-            OptGetInt32(el, MinValueAttribute, x => field.MinValue = x);
-            OptGetInt32(el, MaxValueAttribute, x => field.MaxValue = x);
+            GetOptionalInt32(el, MinValueAttribute, x => field.MinValue = x);
+            GetOptionalInt32(el, MaxValueAttribute, x => field.MaxValue = x);
             return field;
         }
 
         private StringField ReadStringField(RecordEntity record, XmlElement el)
         {
             var field = (StringField)CreateField(record, el);
-            OptGetInt32(el, MinLengthAttribute, x => field.MinLength = x);
-            OptGetInt32(el, MaxLengthAttribute, x => field.MaxLength = x);
-            OptGetString(el, RegexAttribute, x => field.RegexPattern = x);
-            OptGetString(el, TransformAttribute, strTransAttr =>
+            GetOptionalInt32(el, MinLengthAttribute, x => field.MinLength = x);
+            GetOptionalInt32(el, MaxLengthAttribute, x => field.MaxLength = x);
+            GetOptionalString(el, RegexAttribute, x => field.RegexPattern = x);
+            GetOptionalString(el, TransformAttribute, strTransAttr =>
             {
                 StringTransform transform = StringTransform.None;
                 if (!string.IsNullOrWhiteSpace(strTransAttr))
@@ -164,16 +164,17 @@ namespace Sharara.EntityCodeGen
             return (DateTimeField)CreateField(record, el);
         }
 
-        private FieldType GetListItemType(XmlElement el)
+        private FieldType.Entity GetListItemType(XmlElement el)
         {
-            string itemTypeName = MustGetString(el, OfAttribute);
+            string name = GetOrThrowString(el, NameAttribute);
+            string itemTypeName = GetOrThrowString(el, RecordAttribute);
             return itemTypeName switch
             {
-                DateTimeField.XmlTypeName => FieldType.DateTime.Instance,
-                Float64Field.XmlTypeName => FieldType.Float64.Instance,
-                Int32Field.XmlTypeName => FieldType.Int32.Instance,
-                Int64Field.XmlTypeName => FieldType.Int64.Instance,
-                StringField.XmlTypeName => FieldType.String.Instance,
+                DateTimeField.XmlTypeName or
+                Float64Field.XmlTypeName or
+                Int32Field.XmlTypeName or
+                Int64Field.XmlTypeName or
+                StringField.XmlTypeName => throw new InvalidOperationException($"List '{name}' should reference a record"),
                 _ => new FieldType.Entity(itemTypeName)
             };
         }
@@ -186,7 +187,7 @@ namespace Sharara.EntityCodeGen
 
         private Field CreateField(RecordEntity record, XmlElement el)
         {
-            var fieldName = MustGetString(el, NameAttribute);
+            var fieldName = GetOrThrowString(el, NameAttribute);
             var fieldType = el.Name;
 
             Field field = fieldType switch
@@ -195,7 +196,7 @@ namespace Sharara.EntityCodeGen
                 Float64Field.XmlTypeName => new Float64Field(record, fieldName),
                 Int32Field.XmlTypeName => new Int32Field(record, fieldName),
                 Int64Field.XmlTypeName => new Int64Field(record, fieldName),
-                ReferenceField.XmlTypeName => new ReferenceField(record, new FieldType.Entity(MustGetString(el, EntityAttribute)), fieldName),
+                ReferenceField.XmlTypeName => new ReferenceField(record, new FieldType.Entity(GetOrThrowString(el, EntityAttribute)), fieldName),
                 ListField.XmlTypeName => CreateListField(record, el, fieldName),
                 StringField.XmlTypeName => new StringField(record, fieldName),
                 _ => throw new NotImplementedException(fieldType + " Unknown")

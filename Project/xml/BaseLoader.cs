@@ -20,7 +20,7 @@ namespace Sharara.EntityCodeGen
         public const string RegexAttribute = "regex";
         public const string TransformAttribute = "transform";
         public const string NameAttribute = "name";
-        public const string OfAttribute = "of";
+        public const string RecordAttribute = "record";
         public const string PluralAttribute = "plural";
         public const string RequiredAttribute = "required";
         public const string KeyAttribute = "key";
@@ -30,7 +30,7 @@ namespace Sharara.EntityCodeGen
         public const string ProtoIdAttribute = "pb:id";
 
 
-        protected string MustGetString(XmlElement el, string attribName)
+        protected string GetOrThrowString(XmlElement el, string attribName)
         {
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);
@@ -49,14 +49,14 @@ namespace Sharara.EntityCodeGen
             return valIsTrue;
         }
 
-        protected int MustGetInt(XmlElement el)
+        protected int GetOrThrowInt32(XmlElement el)
         {
             ArgumentNullException.ThrowIfNull(el);
             ArgumentException.ThrowIfNullOrEmpty(el.InnerText);
             return int.Parse(el.InnerText);
         }
 
-        protected int MustGetInt(XmlElement el, string attribName)
+        protected int GetOrThrowInt32(XmlElement el, string attribName)
         {
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);
@@ -65,7 +65,7 @@ namespace Sharara.EntityCodeGen
             return int.Parse(value);
         }
 
-        protected void OptGetInt32(XmlElement el, string attribName, Action<int> callback)
+        protected void GetOptionalInt32(XmlElement el, string attribName, Action<int> callback)
         {
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);
@@ -76,7 +76,7 @@ namespace Sharara.EntityCodeGen
             }
         }
 
-        protected void OptGetInt64(XmlElement el, string attribName, Action<long> callback)
+        protected void GetOptionalInt64(XmlElement el, string attribName, Action<long> callback)
         {
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);
@@ -87,7 +87,7 @@ namespace Sharara.EntityCodeGen
             }
         }
 
-        protected void OptGetFloat64(XmlElement el, string attribName, Action<double> callback)
+        protected void GetOptionalFloat64(XmlElement el, string attribName, Action<double> callback)
         {
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);
@@ -98,7 +98,7 @@ namespace Sharara.EntityCodeGen
             }
         }
 
-        protected void OptGetString(XmlElement el, string attribName, Action<string> callback)
+        protected void GetOptionalString(XmlElement el, string attribName, Action<string> callback)
         {
             ArgumentNullException.ThrowIfNull(el);
             ArgumentNullException.ThrowIfNull(attribName);

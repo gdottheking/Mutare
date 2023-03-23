@@ -4,11 +4,11 @@ namespace Sharara.EntityCodeGen.Core.Fields.Types
     {
         public class List : FieldType
         {
-            public List(FieldType itemType) : base(FieldTypeId.List)
+            public List(FieldType.Entity itemType) : base(FieldTypeId.List)
             {
                 ItemType = itemType;
             }
-            public FieldType ItemType { get; }
+            public FieldType.Entity ItemType { get; }
 
             public override string GrpcType
             {

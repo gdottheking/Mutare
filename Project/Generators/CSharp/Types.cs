@@ -13,6 +13,21 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             var props = string.Join("\n", Properties.Select(prop => prop.ToString()));
             return props;
         }
+
+        /// TODO Hacky hack!
+        public static Core.Fields.Field GetOutputField(IClrProperty prop)
+        {
+            if (prop is ClrProperty standard)
+            {
+                return standard.Source;
+            }
+            else if (prop is ClrShadowProperty shadow)
+            {
+
+                return shadow.Source.Target with { Name = prop.Name, IsRequiredOnCreate = !prop.DefaultsToNull };
+            }
+            throw new NotImplementedException();
+        }
     }
 
     interface IClrProperty
@@ -58,7 +73,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
     record class ClrShadowProperty(
         ClrRecord Parent,
-        Core.Fields.ShadowField ShadowField,
+        Core.Fields.ShadowField Source,
         string Name,
         string ClrType,
         bool DefaultsToNull,

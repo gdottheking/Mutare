@@ -2,14 +2,25 @@ using Sharara.EntityCodeGen.Core.Fields.Types;
 
 namespace Sharara.EntityCodeGen.Core.Fields
 {
+    // TODO: Use flags for IsRequired
+    [Flags]
+    enum FieldRequired
+    {
+        None,
+        Put = 1,
+        Update = 2,
+        Get = 3,
+        Delete = 4
+    }
+
     record class Field
     {
         public RecordEntity Record { get; }
         public FieldType FieldType { get; }
         public string Name { get; set; }
-        public bool IsRequired { get; set; }
+        public bool IsRequiredOnCreate { get; set; }
         public bool IsKey { get; set; }
-        public bool IsNullable => !IsKey && !IsRequired;
+        public bool IsNullable => !IsKey && !IsRequiredOnCreate;
         public bool CheckOnUpdate { get; set; }
         public int ProtoId { get; set; }
 
@@ -27,7 +38,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
 
         public override string ToString()
         {
-            return (IsRequired ? "*" : "") + $"{Name}:{FieldType}";
+            return (IsRequiredOnCreate ? "*" : "") + $"{Name}:{FieldType}";
         }
 
         public static FieldType int32Type() => FieldType.Int32.Instance;
@@ -42,7 +53,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
 
         public static FieldType entityType(Entity e) => new FieldType.Entity(e);
 
-        public static FieldType listType(FieldType itemType) => new FieldType.List(itemType);
+        public static FieldType listType(FieldType.Entity itemType) => new FieldType.List(itemType);
 
     }
 }
