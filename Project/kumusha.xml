@@ -1,0 +1,95 @@
+<document
+    xmlns="xsiNoSchema"
+    xmlns:api="https://codegen.sharara.com/api/v1"
+    xmlns:pb="https://codegen.sharara.com/protobuf/v1"
+    xmlns:db="https://codegen.sharara.com/database/v1"
+    xmlns:csharp="https://codegen.sharara.com/csharp/v1"
+    csharp:namespace="Sharara.Services.Kumusha.Generated"
+    pb:package="sharara.services.kumusha"
+>
+
+    <enums>
+        <enum name="YesNo" plural="YesNo">
+            <value name="No">0</value>
+            <value name="Yes">1</value>
+        </enum>
+        <enum name="RecordStatus" plural="RecordStatuses">
+            <value name="Draft">0</value>
+            <value name="PendingReview">10</value>
+            <value name="InReview">20</value>
+            <value name="Published">30</value>
+            <value name="Deleted">40</value>
+            <value name="Banned">50</value>
+        </enum>
+    </enums>
+
+    <records>
+
+        <record name="Business" plural="Businesses">
+            <fields>
+                <i64 name="Id" required="true" key="true" pb:id="1" />
+
+                <str name="Name"
+                    minLength="3"
+                    maxLength="255"
+                    required="true"
+                    checkOnUpdate="true"
+                    pb:id="2" />
+
+                <!-- TODO: Add transformRef -->
+                <str name="NormalizedName"
+                    minLength="3"
+                    maxLength="255"
+                    required="true"
+                    checkOnUpdate="true"
+                    transform="trim,toUpper"
+                    pb:id="3" />
+
+                <date name="DateRegistered" pb:id="5" />
+                <date name="DateVerified" pb:id="6" />
+                <ref name="IsVerified" target="YesNo" pb:id="7" />
+                <ref name="Status" target="RecordStatus" pb:id="8" />
+                <ref name="PrimaryLocation" target="BusinessLocation" pb:id="9" />
+
+                <list name="Locations" record="BusinessLocation" pb:id="10" />
+                <list name="Services" record="BusinessService" pb:id="11" />
+
+                <!-- Missing Props lists: Owner, Administrators -->
+            </fields>
+        </record>
+
+        <record name="BusinessLocation" plural="BusinessLocations">
+            <fields>
+                <i64 name="Id" required="true" key="true" pb:id="1" />
+                <str name="PhoneNumber" pb:id="2" />
+                <str name="Website" pb:id="3" />
+                <str name="EmailAddress" pb:id="4" />
+                <ref name="Address" target="Address" pb:id="5" />
+            </fields>
+        </record>
+
+        <record name="Address" plural="Addresses">
+            <fields>
+                <i64 name="Id" required="true" key="true" pb:id="1" />
+                <str name="Line1" required="true" pb:id="2" />
+                <str name="Line2" pb:id="3" />
+                <str name="City" pb:id="4" />
+                <str name="Country" pb:id="5" />
+                <str name="PostalCode" required="true" pb:id="6" />
+            </fields>
+        </record>
+
+        <record name="BusinessService" plural="BusinessServices">
+            <fields>
+                <i32 name="Id" key="true" pb:id="1" />
+                <i32 name="Name" required="true" pb:id="2" />
+                <i32 name="NormalizedName" pb:id="3" />
+                <i32 name="Description" pb:id="4" />
+                <ref name="Parent" target="BusinessService" pb:id="5" />
+                <list record="BusinessService" name="Children" pb:id="6" />
+            </fields>
+        </record>
+
+    </records>
+
+</document>

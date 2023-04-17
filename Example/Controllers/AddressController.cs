@@ -22,7 +22,7 @@ namespace Sharara.Services.Kumusha.Generated
         [HttpGet]
         public async Task<IActionResult> GetCountAsync()
         {
-            return Ok(await repository.GetAddressCountAsync());
+            return Ok(await repository.GetStudentCountAsync());
         }
 
         [Route("all")]

@@ -8,7 +8,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
         // Applies to Int32, Int64, Float64
         public static bool IsMandatory(this Field field)
         {
-            return (field.IsRequiredOnCreate || field.IsKey);
+            return (field.IsRequiredOnPut || field.IsKey);
         }
 
         public static bool IsNumericPrimitive(this FieldType fieldType)

@@ -13,7 +13,7 @@ namespace Sharara.Services.Kumusha
 
         public long GetAddressCount()
         {
-            var response =  this.client.GetAddressCount(new Generated.Proto.GetAddressCountRequest());
+            var response =  this.client.GetTeacherCount(new Generated.Proto.GetTeacherCountRequest());
             return response.Payload;
         }
     }

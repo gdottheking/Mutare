@@ -28,6 +28,11 @@ namespace Sharara.EntityCodeGen.Core
 
         public SchemaConfig Configuration { get; }
 
+        public IEnumerable<RecordEntity> Records
+        {
+            get => Entities.Where(e => e.EntityType == EntityType.Record).Cast<RecordEntity>();
+        }
+
         public IEnumerable<Entity> Entities { get => entityById.Values; }
 
         public bool HasEntityName(string name) => entityById.ContainsKey(name);
@@ -43,6 +48,14 @@ namespace Sharara.EntityCodeGen.Core
             {
                 entity.Validate();
             }
+
+            ProcessPointers();
+        }
+
+        public void ProcessPointers()
+        {
+            var recordHelper = new RecordRelationshipHelper(this);
+            recordHelper.ProcessPointers();
         }
 
     }

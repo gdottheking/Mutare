@@ -14,19 +14,8 @@ namespace Sharara.EntityCodeGen.Core
         public List<Field> Fields { get; } = new List<Field>();
 
         /// List fields from other records, that reference this
+        [Obsolete]
         public List<ListField> IncomingPointers { get; } = new List<ListField>();
-
-        // This record's fields which point to another record (NB: Could be self referencing)
-        public IReadOnlyCollection<Field> OutgoingPointersScalar()
-        {
-            Func<Field, bool> PointsToARecord = (f) =>
-            {
-                bool isEntityType = f.FieldType.Id == Core.Fields.Types.FieldType.FieldTypeId.Entity;
-                var entity = ((Core.Fields.Types.FieldType.Entity)f.FieldType).GetEntity();
-                return entity.EntityType == EntityType.Record;
-            };
-            return Fields.Where(PointsToARecord).ToList().AsReadOnly();
-        }
 
         public Field? this[string name]
         {
@@ -41,6 +30,8 @@ namespace Sharara.EntityCodeGen.Core
         }
 
         // TODO: Can't yet handle many-many relationships
+        // TODO: Self referencing isn't implemented correctly either
+        [Obsolete]
         public ICollection<ShadowField> ShadowFields()
         {
             // Get all reference fields which point to a Record
@@ -69,11 +60,10 @@ namespace Sharara.EntityCodeGen.Core
             {
                 foreach (var pk in incomingPointer.Record.PrimaryKeys())
                 {
-                    var inverse = pk with { IsRequiredOnCreate = false };
+                    var inverse = pk with { RequiredFlags = FieldRequired.None };
                     var shadow = new ShadowField(incomingPointer.Record.Name + pk.Name, incomingPointer, inverse);
                     shadowFields.Add(shadow);
                 }
-
             }
             return shadowFields;
         }

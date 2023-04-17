@@ -24,7 +24,7 @@ namespace Sharara.EntityCodeGen
         public const string PluralAttribute = "plural";
         public const string RequiredAttribute = "required";
         public const string KeyAttribute = "key";
-        public const string EntityAttribute = "entity";
+        public const string TargetAttribute = "target";
         public const string CheckOnUpdateAttribute = "checkOnUpdate";
         public const string NS_PROTO = "https://codegen.sharara.com/protobuf/v1";
         public const string ProtoIdAttribute = "pb:id";
@@ -109,5 +109,43 @@ namespace Sharara.EntityCodeGen
             }
         }
 
+        protected void GetOptionalEnum<TEnum>(XmlElement el, string attribute, TEnum noneValue, TEnum defaultValue, Action<TEnum> callback) where TEnum : struct, IConvertible
+        {
+            if (!typeof(TEnum).IsEnum)
+            {
+                throw new ArgumentException("Type must me an Enum");
+            }
+
+            GetOptionalString(el, attribute, str =>
+            {
+                callback(ParseEnumAttributeValue(str, noneValue, defaultValue));
+            });
+        }
+
+        TEnum ParseEnumAttributeValue<TEnum>(String attributeStrValue, TEnum noneValue, TEnum defaultValue)
+            where TEnum : struct, IConvertible
+        {
+            attributeStrValue = attributeStrValue.Trim();
+            int result = Convert.ToInt32(attributeStrValue.StartsWith("+=") ? defaultValue : noneValue);
+            if (!string.IsNullOrWhiteSpace(attributeStrValue))
+            {
+                var splitBy = new string[] { ",", "|", "+=" };
+                var parts = attributeStrValue.Split(splitBy,
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var str in parts)
+                {
+                    if (Enum.TryParse<TEnum>(str, true, out TEnum temp))
+                    {
+                        result |= Convert.ToInt32(temp);
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Invalid value '{str}'");
+                    }
+                }
+            }
+            return ((TEnum)(object)result);
+        }
     }
 }

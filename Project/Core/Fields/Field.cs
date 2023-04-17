@@ -18,9 +18,10 @@ namespace Sharara.EntityCodeGen.Core.Fields
         public RecordEntity Record { get; }
         public FieldType FieldType { get; }
         public string Name { get; set; }
-        public bool IsRequiredOnCreate { get; set; }
+        public FieldRequired RequiredFlags { get; set; }
+        public bool IsRequiredOnPut => RequiredFlags.HasFlag(FieldRequired.Put);
         public bool IsKey { get; set; }
-        public bool IsNullable => !IsKey && !IsRequiredOnCreate;
+        public bool IsNullable => !IsKey && !IsRequiredOnPut;
         public bool CheckOnUpdate { get; set; }
         public int ProtoId { get; set; }
 
@@ -38,7 +39,7 @@ namespace Sharara.EntityCodeGen.Core.Fields
 
         public override string ToString()
         {
-            return (IsRequiredOnCreate ? "*" : "") + $"{Name}:{FieldType}";
+            return (IsRequiredOnPut ? "*" : "") + $"{Name}:{FieldType}";
         }
 
         public static FieldType int32Type() => FieldType.Int32.Instance;

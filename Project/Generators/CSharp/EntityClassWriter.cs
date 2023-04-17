@@ -118,7 +118,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
                 WriteLine($"[Key]");
             }
 
-            if (field.IsRequiredOnCreate)
+            if (field.IsRequiredOnPut)
             {
                 WriteLine($"[Required]");
             }
@@ -206,7 +206,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
 
                 parent.WriteLine("var result = new List<ValidationResult>();");
 
-                if (strf.IsRequiredOnCreate)
+                if (strf.IsRequiredOnPut)
                 {
                     var test = $"null == {strf.Name}";
                     using (parent.IfStat(test))

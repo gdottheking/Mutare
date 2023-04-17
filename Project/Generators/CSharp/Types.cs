@@ -23,8 +23,11 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             }
             else if (prop is ClrShadowProperty shadow)
             {
-
-                return shadow.Source.Target with { Name = prop.Name, IsRequiredOnCreate = !prop.DefaultsToNull };
+                return shadow.Source.Target with
+                {
+                    Name = prop.Name,
+                    RequiredFlags = !prop.DefaultsToNull ? Core.Fields.FieldRequired.Put : Core.Fields.FieldRequired.None
+                };
             }
             throw new NotImplementedException();
         }
@@ -61,7 +64,7 @@ namespace Sharara.EntityCodeGen.Generators.CSharp
             string isNullable = prop.IsClrSystemNullable ? "System.Nullable<?>" : "";
             string defaultsToNull = prop.DefaultsToNull ? "def=null" : "def=val";
 
-            return $"{prop.Parent.ClassName}.{prop.Name}: {prop.ClrType}" +
+            return $"{prop.Parent.ClassName}.{prop.Name}: {prop.ClrType} " +
                 $"// {defaultsToNull} {isNullable}";
         }
 

@@ -88,9 +88,9 @@ namespace Sharara.EntityCodeGen
         private void ReadCommonFieldAttributes(Field field, XmlElement el)
         {
             field.ProtoId = GetOrThrowInt32(el, ProtoIdAttribute);
-            field.IsRequiredOnCreate = GetBool(el, RequiredAttribute);
             field.IsKey = GetBool(el, KeyAttribute);
             field.CheckOnUpdate = GetBool(el, CheckOnUpdateAttribute);
+            GetOptionalEnum<FieldRequired>(el, RequiredAttribute, FieldRequired.None, FieldRequired.None, x => field.RequiredFlags = x);
         }
 
         private ListField ReadListField(RecordEntity record, XmlElement el)
@@ -133,29 +133,7 @@ namespace Sharara.EntityCodeGen
             GetOptionalInt32(el, MinLengthAttribute, x => field.MinLength = x);
             GetOptionalInt32(el, MaxLengthAttribute, x => field.MaxLength = x);
             GetOptionalString(el, RegexAttribute, x => field.RegexPattern = x);
-            GetOptionalString(el, TransformAttribute, strTransAttr =>
-            {
-                StringTransform transform = StringTransform.None;
-                if (!string.IsNullOrWhiteSpace(strTransAttr))
-                {
-                    var splitBy = new string[] { ",", "|" };
-                    var parts = strTransAttr.Split(splitBy,
-                        StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-
-                    foreach (var str in parts)
-                    {
-                        if (Enum.TryParse<StringTransform>(str, true, out StringTransform temp))
-                        {
-                            transform |= temp;
-                        }
-                        else
-                        {
-                            throw new ArgumentException($"Invalid Transform '{str}' on field {field.Name}");
-                        }
-                    }
-                }
-                field.Transforms = transform;
-            });
+            GetOptionalEnum<StringTransform>(el, TransformAttribute, StringTransform.None, field.Transforms, x => field.Transforms = x);
             return field;
         }
 
@@ -196,7 +174,7 @@ namespace Sharara.EntityCodeGen
                 Float64Field.XmlTypeName => new Float64Field(record, fieldName),
                 Int32Field.XmlTypeName => new Int32Field(record, fieldName),
                 Int64Field.XmlTypeName => new Int64Field(record, fieldName),
-                ReferenceField.XmlTypeName => new ReferenceField(record, new FieldType.Entity(GetOrThrowString(el, EntityAttribute)), fieldName),
+                ReferenceField.XmlTypeName => new ReferenceField(record, new FieldType.Entity(GetOrThrowString(el, TargetAttribute)), fieldName),
                 ListField.XmlTypeName => CreateListField(record, el, fieldName),
                 StringField.XmlTypeName => new StringField(record, fieldName),
                 _ => throw new NotImplementedException(fieldType + " Unknown")
